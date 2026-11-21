@@ -39,6 +39,13 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     through the mirror adapter. Built from genuine Mathlib theorems only
     (`riemannZeta_def_of_ne_zero`, `completedRiemannZeta_one_sub`,
     `Complex.Gamma_ne_zero_of_re_pos`).
+  - `DirichletGRH` + `nonvanishing_of_dirichlet_factorization` — the abelian
+    rung, concretely plugged: `DirichletGRH` is the exact shape of the parent
+    project's proven theorem (`Main.lean: LFunction_ne_zero_of_half_lt_re`);
+    given a Kronecker-Weber factorization `ζ_K = ∏ L(χ)` into Dirichlet
+    L-functions, the proven GRH immediately yields nonvanishing of `ζ_K`
+    right of the critical line (pole `s = 1` handled). What remains for the
+    abelian case is *only* the factorization itself.
   - **The `ζ_ℚ` glue (new lemma, not previously in Mathlib)**:
     `card_ideal_rat_absNorm` — exactly one ideal of `𝓞 ℚ` per absolute norm,
     via `Rat.ringOfIntegersEquiv`, `Algebra.norm_eq_of_algEquiv`, and the PID

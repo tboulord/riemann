@@ -125,16 +125,18 @@ theorem dedekindZetaCriticalLine (D : DedekindZetaDatum K)
 
 /-- Arithmetic glue for the abelian case: if a function factors on a right
 half-plane as a finite product of L-functions, each of which is nonvanishing
-for `Re(s) > 1/2`, then the product is nonvanishing for `Re(s) > 1/2`. -/
+for `Re(s) > 1/2` away from the point `s = 1` (where a principal-character
+factor may have its pole), then the product is nonvanishing for `Re(s) > 1/2`
+away from `s = 1`. -/
 theorem nonvanishing_right_of_product {ι : Type*} (t : Finset ι)
     (L : ι → ℂ → ℂ) (f : ℂ → ℂ) {bound : ℝ} (hb : bound ≤ 1 / 2)
     (hmul : ∀ z : ℂ, bound < z.re → f z = ∏ i ∈ t, L i z)
-    (hnz : ∀ i ∈ t, ∀ z : ℂ, 1 / 2 < z.re → L i z ≠ 0) :
-    ∀ z : ℂ, 1 / 2 < z.re → f z ≠ 0 := by
-  intro z hz
+    (hnz : ∀ i ∈ t, ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → L i z ≠ 0) :
+    ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → f z ≠ 0 := by
+  intro z hz hz1
   have hbound : bound < z.re := by linarith
   rw [hmul z hbound, Finset.prod_ne_zero_iff]
-  exact fun i hi => hnz i hi z hz
+  exact fun i hi => hnz i hi z hz hz1
 
 /-- **The abelian case of ERH follows from Dirichlet GRH.** For an abelian
 extension, Kronecker-Weber identifies `ζ_K` with a finite product of Dirichlet
@@ -144,9 +146,9 @@ turns such a factorization into the ERH statement for `K`. -/
 theorem abelianDedekindERH {K : Type*} [Field K] [NumberField K] (D : DedekindZetaDatum K)
     {ι : Type*} (t : Finset ι) (L : ι → ℂ → ℂ) {bound : ℝ} (hb : bound ≤ 1 / 2)
     (hmul : ∀ z : ℂ, bound < z.re → D.ζ z = ∏ i ∈ t, L i z)
-    (hnz : ∀ i ∈ t, ∀ z : ℂ, 1 / 2 < z.re → L i z ≠ 0) :
+    (hnz : ∀ i ∈ t, ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → L i z ≠ 0) :
     DedekindERH K D :=
-  fun z hz _ => nonvanishing_right_of_product t L D.ζ hb hmul hnz z hz
+  fun z hz hz1 => nonvanishing_right_of_product t L D.ζ hb hmul hnz z hz hz1
 
 /-! ## The interface instantiated on Mathlib's own Riemann zeta -/
 
@@ -196,6 +198,30 @@ theorem riemannZetaCriticalLine
 #print axioms dedekindZetaCriticalLine
 #print axioms nonvanishing_right_of_product
 #print axioms abelianDedekindERH
+
+/-- The exact shape of the parent project's proven theorem
+(`Main.lean`: `LFunction_ne_zero_of_half_lt_re : DirichletLNonvanishingRightOfHalf := allChi`):
+every Dirichlet L-function is nonvanishing right of the critical line, apart
+from the principal character at its pole `s = 1`. -/
+def DirichletGRH : Prop :=
+  ∀ (N : ℕ) [NeZero N] (χ : DirichletCharacter ℂ N) (s : ℂ),
+    1 / 2 < s.re → (χ ≠ 1 ∨ s ≠ 1) → DirichletCharacter.LFunction χ s ≠ 0
+
+/-- **The abelian rung, concretely plugged**: if `ζ_K` factors as a finite
+product of Dirichlet L-functions on a half-plane (Kronecker-Weber), then the
+parent project's proven Dirichlet GRH immediately yields nonvanishing of
+`ζ_K` right of the critical line. Combined with `dedekindZetaCriticalLine`,
+a single such factorization gives ERH for `K`. -/
+theorem nonvanishing_of_dirichlet_factorization (hgrh : DirichletGRH)
+    (ζ : ℂ → ℂ) {N : ℕ} [NeZero N]
+    (χs : Finset (DirichletCharacter ℂ N)) {bound : ℝ} (hb : bound ≤ 1 / 2)
+    (hmul : ∀ z : ℂ, bound < z.re →
+      ζ z = ∏ χ ∈ χs, DirichletCharacter.LFunction χ z) :
+    ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → ζ z ≠ 0 :=
+  nonvanishing_right_of_product χs (fun χ _ => DirichletCharacter.LFunction χ) ζ hb hmul
+    (fun χ _ z' hz' hz'1 => hgrh N χ z' hz' (Or.inr hz'1))
+
+#print axioms nonvanishing_of_dirichlet_factorization
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
