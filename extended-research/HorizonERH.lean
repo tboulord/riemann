@@ -223,6 +223,62 @@ theorem nonvanishing_of_dirichlet_factorization (hgrh : DirichletGRH)
 
 #print axioms nonvanishing_of_dirichlet_factorization
 
+/-! ## The Hecke and Artin rungs (interfaces and the Brauer reduction) -/
+
+/-- ERH for an arbitrary family of L-functions: every member is nonvanishing
+right of the critical line (away from the possible pole at `s = 1`). -/
+def ERHFamily (S : Set (ℂ → ℂ)) : Prop :=
+  ∀ L ∈ S, ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → L z ≠ 0
+
+/-- **The Hecke rung, interface**: the Dedekind zeta of `K` *is* the Hecke
+L-function of the trivial Grössencharakter of `K`; consequently, ERH for a
+family of L-functions containing `ζ_K` gives ERH for `K`. Supplying the family
+of Hecke L-functions of `K` (idele-class characters, analytic continuation,
+functional equation) is the analytic content of the Hecke rung. -/
+theorem dedekindERH_of_heckeERH {K : Type*} [Field K] [NumberField K]
+    (D : DedekindZetaDatum K) {S : Set (ℂ → ℂ)}
+    (hS : ERHFamily S) (hζ : D.ζ ∈ S) :
+    DedekindERH K D :=
+  fun z hz hz1 => hS D.ζ hζ z hz hz1
+
+/-- **Brauer decomposition data for an Artin L-function**: the L-function
+factors, on a half-plane, as a finite product of Hecke-type L-functions with
+integer exponents. This is the shape supplied by Brauer's induction theorem
+(an Artin character is a virtual combination of characters induced from
+1-dimensional characters of subgroups — cyclic by class field theory); the
+parent archive contains a `GroundTheory/Brauer` tower in this direction. -/
+structure ArtinBrauerDatum (f : ℂ → ℂ) where
+  /-- Index type for the Hecke-type factors. -/
+  ι : Type*
+  /-- Finite support of the decomposition. -/
+  t : Finset ι
+  /-- The Hecke-type L-functions. -/
+  L : ι → ℂ → ℂ
+  /-- Integer exponents (Brauer: virtual characters, so signs occur). -/
+  e : ι → ℤ
+  /-- Where the product identity holds. -/
+  bound : ℝ
+  /-- The product identity. -/
+  hmul : ∀ z : ℂ, bound < z.re → f z = ∏ i ∈ t, (L i z) ^ ((e i : ℂ))
+
+/-- **The Artin rung, reduction step**: an Artin L-function with Brauer
+decomposition data is nonvanishing right of the critical line as soon as all
+the Hecke-type factors in the decomposition are. Combined with
+`dedekindERH_of_heckeERH` and the mirror adapter, this is the complete logical
+bridge "Hecke ERH + Brauer induction ⟹ Artin ERH"; what remains is the
+analytic supply of the two hypotheses (Hecke L-theory; Brauer induction). -/
+theorem nonvanishing_of_artin_brauer {f : ℂ → ℂ} (d : ArtinBrauerDatum f) (hb : d.bound ≤ 1 / 2)
+    (hnz : ∀ i ∈ d.t, ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → d.L i z ≠ 0) :
+    ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → f z ≠ 0 := by
+  intro z hz hz1
+  have hbound : d.bound < z.re := by linarith
+  rw [d.hmul z hbound, Finset.prod_ne_zero_iff]
+  intro i hi
+  exact Complex.cpow_ne_zero_iff.mpr (Or.inl (hnz i hi z hz hz1))
+
+#print axioms dedekindERH_of_heckeERH
+#print axioms nonvanishing_of_artin_brauer
+
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
 /-- The ring of integers of `ℚ`, as a `ℤ`-algebra equivalence with `ℤ`. -/

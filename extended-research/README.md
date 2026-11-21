@@ -46,6 +46,17 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     L-functions, the proven GRH immediately yields nonvanishing of `ζ_K`
     right of the critical line (pole `s = 1` handled). What remains for the
     abelian case is *only* the factorization itself.
+  - **Hecke rung, interface**: `ERHFamily` + `dedekindERH_of_heckeERH` — ζ_K
+    is the Hecke L of the trivial Grössencharakter, so ERH for any family
+    containing ζ_K gives `DedekindERH K`. The analytic supply (idele-class
+    Hecke characters, continuation, FE) is the rung's remaining content.
+  - **Artin rung, reduction step**: `ArtinBrauerDatum` + 
+    `nonvanishing_of_artin_brauer` — an Artin L-function with Brauer
+    decomposition data (finite product of Hecke-type factors with integer
+    exponents, as supplied by Brauer induction over cyclic subgroups) is
+    nonvanishing right of the critical line as soon as its factors are.
+    Together with `dedekindERH_of_heckeERH` and the mirror adapter this is
+    the complete logical bridge **"Hecke ERH + Brauer ⟹ Artin ERH"**.
   - **The `ζ_ℚ` glue (new lemma, not previously in Mathlib)**:
     `card_ideal_rat_absNorm` — exactly one ideal of `𝓞 ℚ` per absolute norm,
     via `Rat.ringOfIntegersEquiv`, `Algebra.norm_eq_of_algEquiv`, and the PID
@@ -96,7 +107,9 @@ also be given an optional lake build target (e.g. `Statements`). Building all
    factorization `ζ_K = ∏ L(χ)`; then `abelianDedekindERH` closes ERH for all
    abelian `K` from the parent project's GRH. Cyclotomic ingredients already
    exist in the parent archive (`ReciprocityTheory/Chebotarev/`).
-3. **Hecke characters and Hecke L-functions** (idele-class characters, algebraic
+3. **Hecke characters and Hecke L-functions** (the *interfaces* are done:
+   `ERHFamily`, `dedekindERH_of_heckeERH`, `nonvanishing_of_artin_brauer`;
+   what remains is the analytic construction) (idele-class characters, algebraic
    Hecke characters; analytic continuation and functional equation via Mathlib's
    `WeakFEPair` framework). Definitional work; months.
 4. **The engine extension**: run the parent project's theta-lift chains
