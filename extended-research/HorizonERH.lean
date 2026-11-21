@@ -218,7 +218,7 @@ theorem nonvanishing_of_dirichlet_factorization (hgrh : DirichletGRH)
     (hmul : ∀ z : ℂ, bound < z.re →
       ζ z = ∏ χ ∈ χs, DirichletCharacter.LFunction χ z) :
     ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → ζ z ≠ 0 :=
-  nonvanishing_right_of_product χs (fun χ _ => DirichletCharacter.LFunction χ) ζ hb hmul
+  nonvanishing_right_of_product χs DirichletCharacter.LFunction ζ hb hmul
     (fun χ _ z' hz' hz'1 => hgrh N χ z' hz' (Or.inr hz'1))
 
 #print axioms nonvanishing_of_dirichlet_factorization
