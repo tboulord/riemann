@@ -255,7 +255,7 @@ here it is a corollary of the proven GRH.) -/
 theorem LFunction_one_ne_zero (hgrh : DirichletGRH) {N : ℕ} [NeZero N]
     {χ : DirichletCharacter ℂ N} (hχ : χ ≠ 1) :
     DirichletCharacter.LFunction χ 1 ≠ 0 :=
-  hgrh N χ 1 (by simp) (Or.inl hχ)
+  hgrh N χ 1 (by norm_num) (Or.inl hχ)
 
 #print axioms no_siegel_zeros
 #print axioms LFunction_one_ne_zero
