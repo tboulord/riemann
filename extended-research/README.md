@@ -46,6 +46,13 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     L-functions, the proven GRH immediately yields nonvanishing of `ζ_K`
     right of the critical line (pole `s = 1` handled). What remains for the
     abelian case is *only* the factorization itself.
+  - **The ℚ(i) / two-squares rung (abelian gate, reduced)**:
+    `nonvanishing_of_dirichlet_family` (mixed-conductor Dirichlet products),
+    `dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution` (coefficient
+    identity ⟹ `ζ_K = ζ · L(ψ)` via `LSeries_convolution`), and
+    `dedekindERH_quadratic_of_twoSquares` (rung assembled; remaining input:
+    the two-squares count `#{ideals of norm n} = ∑_{d∣n} χ₄(d)` plus the
+    identity-theorem step).
   - **Hecke rung, interface**: `ERHFamily` + `dedekindERH_of_heckeERH` — ζ_K
     is the Hecke L of the trivial Grössencharakter, so ERH for any family
     containing ζ_K gives `DedekindERH K`. The analytic supply (idele-class

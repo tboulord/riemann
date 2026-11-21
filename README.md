@@ -86,7 +86,22 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`riemannHypothesis_iff_dedekindERH_rat`** — RH and ERH(ℚ) are
   **equivalent**, machine-checked in both directions.
 
-### 6. The Hecke and Artin rungs (interfaces and the Brauer reduction)
+### 6. The ℚ(i) / two-squares rung (the abelian gate, reduced)
+
+- **`nonvanishing_of_dirichlet_family`** — mixed-level Dirichlet products:
+  the factor family may combine L-functions of *different* conductors
+  (e.g. `ζ · L(χ₄) = L(mod 1) · L(mod 4)`).
+- **`dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution`** —
+  coefficient identity ⟹ L-series factorization: if the ideal counts of `K`
+  equal the Dirichlet convolution `1 ⍟ ψ`, then `ζ_K = ζ · L(ψ)` on the
+  convergence half-plane (via Mathlib's `LSeries_convolution`). For
+  `K = ℚ(i)`, `ψ = χ₄`, the coefficient identity is the classical
+  two-squares count — the **unique remaining analytic input** of that rung.
+- **`dedekindERH_quadratic_of_twoSquares`** — the rung assembled: given the
+  strip-level equality `ζ_K = ζ · L(χ₄)` (coefficient identity + identity
+  theorem), the proven Dirichlet GRH yields the full `DedekindERH` for `K`.
+
+### 7. The Hecke and Artin rungs (interfaces and the Brauer reduction)
 
 - **`ERHFamily` + `dedekindERH_of_heckeERH`** — `ζ_K` is the Hecke
   L-function of the trivial Grössencharakter; ERH for any family containing
