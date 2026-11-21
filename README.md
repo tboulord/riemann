@@ -86,7 +86,18 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`riemannHypothesis_iff_dedekindERH_rat`** — RH and ERH(ℚ) are
   **equivalent**, machine-checked in both directions.
 
-### 6. The ℚ(i) / two-squares rung (the abelian gate, reduced)
+### 6. No Siegel zeros
+
+- **`DirichletCriticalLine`** — the exact shape of the parent project's proven
+  `DirichletLZerosOnLine` (`Main.lean`: `LFunction_eq_zero_re := claimAll.2.1`).
+- **`no_siegel_zeros`** — under that (parent-proven) statement, there is no
+  real `β ∈ (1/2, 1)` with `L(χ, β) = 0` for any Dirichlet character of any
+  level: the "Siegel zeros" responsible for a century of ineffective constants
+  (Landau–Siegel) cannot exist once the zeros are pinned on the line.
+- **`LFunction_one_ne_zero`** — Dirichlet's nonvanishing `L(χ, 1) ≠ 0` for
+  non-principal `χ`, as a corollary of the proven GRH shape.
+
+### 7. The ℚ(i) / two-squares rung (the abelian gate, reduced)
 
 - **`nonvanishing_of_dirichlet_family`** — mixed-level Dirichlet products:
   the factor family may combine L-functions of *different* conductors
@@ -101,7 +112,7 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   strip-level equality `ζ_K = ζ · L(χ₄)` (coefficient identity + identity
   theorem), the proven Dirichlet GRH yields the full `DedekindERH` for `K`.
 
-### 7. The Hecke and Artin rungs (interfaces and the Brauer reduction)
+### 8. The Hecke and Artin rungs (interfaces and the Brauer reduction)
 
 - **`ERHFamily` + `dedekindERH_of_heckeERH`** — `ζ_K` is the Hecke
   L-function of the trivial Grössencharakter; ERH for any family containing
