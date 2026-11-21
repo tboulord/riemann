@@ -223,6 +223,43 @@ theorem nonvanishing_of_dirichlet_factorization (hgrh : DirichletGRH)
 
 #print axioms nonvanishing_of_dirichlet_factorization
 
+/-! ## No Siegel zeros -/
+
+/-- The exact shape of the parent project's proven theorem (`Statements.lean`:
+`DirichletLZerosOnLine`, proven in `Main.lean` as `LFunction_eq_zero_re :=
+claimAll.2.1`): every zero of every Dirichlet L-function in the open critical
+strip lies on the critical line. -/
+def DirichletCriticalLine : Prop :=
+  ∀ (N : ℕ) [NeZero N] (χ : DirichletCharacter ℂ N) (s : ℂ),
+    0 < s.re → s.re < 1 → DirichletCharacter.LFunction χ s = 0 → s.re = 1 / 2
+
+/-- **No Siegel zeros.** Under the (parent-proven) critical-line statement,
+there is no real `β ∈ (1/2, 1)` with `L(χ, β) = 0` — for any Dirichlet
+character of any level. A "Siegel zero" — a real zero of a real character
+dangerously close to `1`, the obstruction responsible for a century of
+ineffective constants in analytic number theory (Landau–Siegel) — cannot
+exist once the zeros are pinned on the line. -/
+theorem no_siegel_zeros (h : DirichletCriticalLine) {N : ℕ} [NeZero N]
+    (χ : DirichletCharacter ℂ N) {β : ℝ} (hβ1 : 1 / 2 < β) (hβ2 : β < 1) :
+    DirichletCharacter.LFunction χ (β : ℂ) ≠ 0 := by
+  intro hz
+  have hline := h N χ (β : ℂ) (by rw [Complex.ofReal_re]; linarith)
+    (by rw [Complex.ofReal_re]; linarith) hz
+  rw [Complex.ofReal_re] at hline
+  linarith
+
+/-- Dirichlet's nonvanishing at the edge, from the parent-proven GRH shape:
+for every non-principal Dirichlet character, `L(χ, 1) ≠ 0`. (This was the
+historical input to Dirichlet's theorem on primes in arithmetic progressions;
+here it is a corollary of the proven GRH.) -/
+theorem LFunction_one_ne_zero (hgrh : DirichletGRH) {N : ℕ} [NeZero N]
+    {χ : DirichletCharacter ℂ N} (hχ : χ ≠ 1) :
+    DirichletCharacter.LFunction χ 1 ≠ 0 :=
+  hgrh N χ 1 (by simp) (Or.inl hχ)
+
+#print axioms no_siegel_zeros
+#print axioms LFunction_one_ne_zero
+
 /-! ## The Hecke and Artin rungs (interfaces and the Brauer reduction) -/
 
 /-- ERH for an arbitrary family of L-functions: every member is nonvanishing
