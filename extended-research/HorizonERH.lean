@@ -317,11 +317,11 @@ theorem dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
     NumberField.dedekindZeta K s
       = riemannZeta s * DirichletCharacter.LFunction ψ s := by
   have h1 : LSeriesSummable (1 : ℕ → ℂ) s := LSeriesSummable_one_iff.mpr hs
-  have hψ : LSeriesSummable (fun n : ℕ => ψ n) s := LSeriesSummable_of_one_lt_re ψ hs
+  have hψ : LSeriesSummable (fun n : ℕ => ψ n) s := DirichletCharacter.LSeriesSummable_of_one_lt_re ψ hs
   unfold NumberField.dedekindZeta
   rw [DirichletCharacter.LFunction_eq_LSeries ψ hs, ← LSeries_one_eq_riemannZeta hs,
     ← LSeries_convolution' h1 hψ]
-  exact LSeries_congr hcoeff s
+  exact LSeries_congr (fun {n} hn => hcoeff n hn) s
 
 /-- **The ℚ(i) rung assembled**: if the continued `ζ_K` agrees with
 `ζ · L(χ₄)` on the right half-plane (supplied, for `K = ℚ(i)`, by the
@@ -333,21 +333,25 @@ theorem dedekindERH_quadratic_of_twoSquares (hgrh : DirichletGRH)
     (hcont : ∀ z : ℂ, bound < z.re →
       D.ζ z = riemannZeta z * DirichletCharacter.LFunction χ z) :
     DedekindERH K D := by
-  have hfam : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
-      ∃ (N : ℕ) (_ : NeZero N) (ψ : DirichletCharacter ℂ N),
-        ∀ w : ℂ, (![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i) w
-          = DirichletCharacter.LFunction ψ w := by
-    intro i _
-    fin_cases i
-    · exact ⟨1, inferInstance, 1, fun w => by simp⟩
-    · exact ⟨4, inferInstance, χ, fun w => rfl⟩
-  exact nonvanishing_of_dirichlet_family hgrh D.ζ Finset.univ
-    (fun i => ![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i)
-    bound hb (fun z hz => by rw [hcont z hz, Finset.prod_univ_two]) hfam
+  have hf0 : ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → riemannZeta z ≠ 0 := by
+    intro z hz hz1
+    have h0 := hgrh 1 (1 : DirichletCharacter ℂ 1) z hz (Or.inr hz1)
+    rwa [DirichletCharacter.LFunction_modOne_eq] at h0
+  intro z hz hz1
+  have hmul : ∀ z' : ℂ, bound < z'.re →
+      D.ζ z' = ∏ i ∈ (Finset.univ : Finset (Fin 2)),
+        (![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i) z' := by
+    intro z' hz'
+    rw [hcont z' hz']
+    simp [Finset.prod_univ_two]
+  refine nonvanishing_right_of_product _ _ _ hb hmul ?_ z hz hz1
+  intro i _
+  fin_cases i
+  · intro z' hz' hz1'
+    simpa using hf0 z' hz' hz1'
+  · intro z' hz' hz1'
+    simpa using hgrh 4 χ z' hz' (Or.inr hz1')
 
-#print axioms nonvanishing_of_dirichlet_family
-#print axioms dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
-#print axioms dedekindERH_quadratic_of_twoSquares
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
