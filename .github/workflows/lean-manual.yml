@@ -1,0 +1,84 @@
+name: Lean build (manual)
+
+# Manual Lean verification pipeline for this repository.
+# Triggered by hand from the Actions tab ("Run workflow").
+#
+# - Always fetches the pinned dependencies (lake-manifest.json) and the
+#   Mathlib binary cache, then elaborates the requested Lean file(s)
+#   with `lake env lean`.
+# - Fails if any file fails to compile OR if any `#print axioms` output
+#   contains `sorryAx` (placeholder holes).
+# - Optionally also builds a lake target of the main project
+#   (e.g. "Statements"). Building all 175,187 modules takes ~1-2 weeks
+#   of CPU and is NOT feasible on CI runners.
+
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: "Lean file(s) to check (space-separated, repo-relative)"
+        required: false
+        default: "extended-research/HorizonERH.lean"
+      build-target:
+        description: "Optional lake build target (empty = skip; e.g. Statements)"
+        required: false
+        default: ""
+
+concurrency:
+  group: lean-manual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install elan (Lean toolchain manager)
+        run: |
+          curl -sSfL https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Show toolchain
+        run: |
+          cat lean-toolchain
+          lake --version || true
+
+      - name: Fetch dependencies + Mathlib binary cache
+        run: |
+          lake exe cache get
+
+      - name: Elaborate requested Lean file(s) and check for sorryAx
+        env:
+          FILES: ${{ inputs.files }}
+        run: |
+          set -euo pipefail
+          status=0
+          for f in $FILES; do
+            echo "::group::lake env lean $f"
+            set +e
+            lake env lean "$f" 2>&1 | tee "/tmp/$(basename "$f").log"
+            rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "$rc" -ne 0 ]; then
+              echo "::error file=$f::compilation failed (exit $rc)"
+              status=1
+              continue
+            fi
+            if grep -q "sorryAx" "/tmp/$(basename "$f").log"; then
+              echo "::error file=$f::sorryAx found in #print axioms output"
+              status=1
+            else
+              echo "OK: $f compiled with no sorryAx"
+            fi
+          done
+          exit $status
+
+      - name: Optional lake build target
+        if: ${{ inputs.build-target != '' }}
+        run: |
+          set -euo pipefail
+          lake build "${{ inputs.build-target }}"
