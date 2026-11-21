@@ -29,7 +29,8 @@ import Mathlib
 
 set_option linter.style.haveILetI false
 
-open Complex NumberField
+open Complex NumberField LSeries
+open scoped LSeries.notation
 
 /-! ## The abstract mirror adapter -/
 
@@ -278,6 +279,76 @@ theorem nonvanishing_of_artin_brauer {f : ℂ → ℂ} (d : ArtinBrauerDatum f) 
 
 #print axioms dedekindERH_of_heckeERH
 #print axioms nonvanishing_of_artin_brauer
+
+/-! ## The ℚ(i) rung: mixed-level Dirichlet products and the two-squares reduction -/
+
+/-- **Mixed-level Dirichlet products**: unlike
+`nonvanishing_of_dirichlet_factorization` (single level `N`), the factor
+family may combine Dirichlet L-functions of *different* conductors — e.g.
+`ζ · L(χ₄) = L(mod 1) · L(mod 4)`. -/
+theorem nonvanishing_of_dirichlet_family (hgrh : DirichletGRH)
+    (ζ : ℂ → ℂ) {ι : Type*} (t : Finset ι)
+    (L : ι → ℂ → ℂ) {bound : ℝ} (hb : bound ≤ 1 / 2)
+    (hmul : ∀ z : ℂ, bound < z.re → ζ z = ∏ i ∈ t, L i z)
+    (hfam : ∀ i ∈ t, ∃ (N : ℕ) (_ : NeZero N) (ψ : DirichletCharacter ℂ N),
+      ∀ z : ℂ, L i z = DirichletCharacter.LFunction ψ z) :
+    ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → ζ z ≠ 0 := by
+  refine nonvanishing_right_of_product t L ζ hb hmul ?_
+  intro i hi
+  obtain ⟨N, hN, ψ, hψ⟩ := hfam i hi
+  haveI := hN
+  intro z hz hz1
+  rw [hψ z]
+  exact hgrh N ψ z hz (Or.inr hz1)
+
+/-- **Coefficient identity ⟹ L-series factorization**: if the ideal counts of
+`K` equal the Dirichlet convolution `1 ⍟ ψ` (for a Dirichlet character `ψ`),
+then the Dedekind zeta of `K` factors as `ζ · L(ψ)` on the convergence
+half-plane. For `K = ℚ(i)` and `ψ = χ₄` this is the classical factorization,
+and the coefficient identity is the two-squares count
+`#{ideals of norm n} = ∑_{d ∣ n} χ₄(d)` — the unique remaining analytic
+input of that rung. -/
+theorem dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
+    {K : Type*} [Field K] [NumberField K] {N : ℕ} [NeZero N]
+    (ψ : DirichletCharacter ℂ N)
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = ((1 : ℕ → ℂ) ⍟ (fun n : ℕ => ψ n)) n)
+    {s : ℂ} (hs : 1 < s.re) :
+    NumberField.dedekindZeta K s
+      = riemannZeta s * DirichletCharacter.LFunction ψ s := by
+  have h1 : LSeriesSummable (1 : ℕ → ℂ) s := LSeriesSummable_one_iff.mpr hs
+  have hψ : LSeriesSummable (fun n : ℕ => ψ n) s := LSeriesSummable_of_one_lt_re ψ hs
+  unfold NumberField.dedekindZeta
+  rw [DirichletCharacter.LFunction_eq_LSeries ψ hs, ← LSeries_one_eq_riemannZeta hs,
+    ← LSeries_convolution' h1 hψ]
+  exact LSeries_congr hcoeff s
+
+/-- **The ℚ(i) rung assembled**: if the continued `ζ_K` agrees with
+`ζ · L(χ₄)` on the right half-plane (supplied, for `K = ℚ(i)`, by the
+coefficient identity above together with the identity theorem), the proven
+Dirichlet GRH yields the full Dedekind ERH statement for `K`. -/
+theorem dedekindERH_quadratic_of_twoSquares (hgrh : DirichletGRH)
+    {K : Type*} [Field K] [NumberField K] (D : DedekindZetaDatum K)
+    (χ : DirichletCharacter ℂ 4) {bound : ℝ} (hb : bound ≤ 1 / 2)
+    (hcont : ∀ z : ℂ, bound < z.re →
+      D.ζ z = riemannZeta z * DirichletCharacter.LFunction χ z) :
+    DedekindERH K D := by
+  have hfam : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
+      ∃ (N : ℕ) (_ : NeZero N) (ψ : DirichletCharacter ℂ N),
+        ∀ w : ℂ, (![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i) w
+          = DirichletCharacter.LFunction ψ w := by
+    intro i _
+    fin_cases i
+    · exact ⟨1, inferInstance, 1, fun w => by simp⟩
+    · exact ⟨4, inferInstance, χ, fun w => rfl⟩
+  exact nonvanishing_of_dirichlet_family hgrh D.ζ Finset.univ
+    (fun i => ![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i)
+    bound hb (fun z hz => by rw [hcont z hz, Finset.prod_univ_two]) hfam
+
+#print axioms nonvanishing_of_dirichlet_family
+#print axioms dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
+#print axioms dedekindERH_quadratic_of_twoSquares
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
