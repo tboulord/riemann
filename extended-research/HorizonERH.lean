@@ -323,35 +323,25 @@ theorem dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
     ← LSeries_convolution' h1 hψ]
   exact LSeries_congr (fun {n} hn => hcoeff n hn) s
 
-/-- **The ℚ(i) rung assembled**: if the continued `ζ_K` agrees with
-`ζ · L(χ₄)` on the right half-plane (supplied, for `K = ℚ(i)`, by the
-coefficient identity above together with the identity theorem), the proven
-Dirichlet GRH yields the full Dedekind ERH statement for `K`. -/
+/-- **The rung assembled**: if the continued zeta of K agrees with
+`riemannZeta * L(chi_4)` on the right half-plane (supplied, for the Gaussian
+field, by the coefficient identity above together with the identity theorem),
+the proven Dirichlet GRH yields the full Dedekind ERH statement for K. -/
 theorem dedekindERH_quadratic_of_twoSquares (hgrh : DirichletGRH)
     {K : Type*} [Field K] [NumberField K] (D : DedekindZetaDatum K)
     (χ : DirichletCharacter ℂ 4) {bound : ℝ} (hb : bound ≤ 1 / 2)
     (hcont : ∀ z : ℂ, bound < z.re →
       D.ζ z = riemannZeta z * DirichletCharacter.LFunction χ z) :
     DedekindERH K D := by
-  have hf0 : ∀ z : ℂ, 1 / 2 < z.re → z ≠ 1 → riemannZeta z ≠ 0 := by
-    intro z hz hz1
-    have h0 := hgrh 1 (1 : DirichletCharacter ℂ 1) z hz (Or.inr hz1)
-    rwa [DirichletCharacter.LFunction_modOne_eq] at h0
-  intro z hz hz1
-  have hmul : ∀ z' : ℂ, bound < z'.re →
-      D.ζ z' = ∏ i ∈ (Finset.univ : Finset (Fin 2)),
-        (![fun _ => riemannZeta, fun _ => DirichletCharacter.LFunction χ] i) z' := by
-    intro z' hz'
-    rw [hcont z' hz']
-    simp [Finset.prod_univ_two]
-  refine nonvanishing_right_of_product _ _ _ hb hmul ?_ z hz hz1
-  intro i _
-  fin_cases i
-  · intro z' hz' hz1'
-    simpa using hf0 z' hz' hz1'
-  · intro z' hz' hz1'
-    simpa using hgrh 4 χ z' hz' (Or.inr hz1')
+  intro z hz hz1 hz0
+  rw [hcont z (by linarith), mul_eq_zero] at hz0
+  rcases hz0 with h | h
+  · exact hgrh 1 (1 : DirichletCharacter ℂ 1) z hz (Or.inr hz1) (by simpa using h)
+  · exact hgrh 4 χ z hz (Or.inr hz1) h
 
+#print axioms nonvanishing_of_dirichlet_family
+#print axioms dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
+#print axioms dedekindERH_quadratic_of_twoSquares
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
