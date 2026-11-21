@@ -48,9 +48,12 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     on the half-plane `1 < Re s`.
   - **The full loop for `K = ℚ`**: `riemannZetaDatum`, a `DedekindZetaDatum ℚ`
     whose anchor field (`agrees`) is *proved* from the glue theorem rather
-    than assumed, and `dedekindERH_rat_of_RH : RiemannHypothesis →
-    DedekindERH ℚ riemannZetaDatum` — the machine-verified Riemann Hypothesis
-    (proved in the parent project) formally yields the ERH statement for `ℚ`.
+    than assumed; `dedekindERH_rat_of_RH : RiemannHypothesis →
+    DedekindERH ℚ riemannZetaDatum` and the converse bridge
+    `riemannHypothesis_of_dedekindERH_rat` (the parent project's mirror step
+    `Formalism.VW.rh_of_right` replayed on the datum), giving
+    `riemannHypothesis_iff_dedekindERH_rat` — the machine-verified Riemann
+    Hypothesis and the ERH statement for `ℚ` are *equivalent*.
 
   Axiom footprint (verified by `#print axioms` for all theorems above):
   `propext`, `Classical.choice`, `Quot.sound` only — no `sorryAx`.
@@ -80,7 +83,8 @@ also be given an optional lake build target (e.g. `Statements`). Building all
    connect Mathlib's Dedekind zeta of `ℚ` to `riemannZeta`; the anchored
    datum `riemannZetaDatum` and `dedekindERH_rat_of_RH` then turn the
    machine-verified Riemann Hypothesis into the ERH statement for `ℚ`.
-   The `K = ℚ` rung of the ladder is closed.
+   The `K = ℚ` rung of the ladder is closed, in both directions
+   (`riemannHypothesis_iff_dedekindERH_rat`).
 2. **Abelian case end-to-end**: formalize Kronecker–Weber + the conductor
    factorization `ζ_K = ∏ L(χ)`; then `abelianDedekindERH` closes ERH for all
    abelian `K` from the parent project's GRH. Cyclotomic ingredients already
