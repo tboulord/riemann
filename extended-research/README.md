@@ -39,8 +39,20 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     through the mirror adapter. Built from genuine Mathlib theorems only
     (`riemannZeta_def_of_ne_zero`, `completedRiemannZeta_one_sub`,
     `Complex.Gamma_ne_zero_of_re_pos`).
+  - **The `ζ_ℚ` glue (new lemma, not previously in Mathlib)**:
+    `card_ideal_rat_absNorm` — exactly one ideal of `𝓞 ℚ` per absolute norm,
+    via `Rat.ringOfIntegersEquiv`, `Algebra.norm_eq_of_algEquiv`, and the PID
+    structure of `ℤ` transported through `RingEquiv.idealComapOrderIso` —
+    culminating in
+    `dedekindZeta_rat_eq_riemannZeta : NumberField.dedekindZeta ℚ s = riemannZeta s`
+    on the half-plane `1 < Re s`.
+  - **The full loop for `K = ℚ`**: `riemannZetaDatum`, a `DedekindZetaDatum ℚ`
+    whose anchor field (`agrees`) is *proved* from the glue theorem rather
+    than assumed, and `dedekindERH_rat_of_RH : RiemannHypothesis →
+    DedekindERH ℚ riemannZetaDatum` — the machine-verified Riemann Hypothesis
+    (proved in the parent project) formally yields the ERH statement for `ℚ`.
 
-  Axiom footprint (verified by `#print axioms` for all seven theorems):
+  Axiom footprint (verified by `#print axioms` for all theorems above):
   `propext`, `Classical.choice`, `Quot.sound` only — no `sorryAx`.
 
 ## How to compile
@@ -63,11 +75,12 @@ also be given an optional lake build target (e.g. `Statements`). Building all
 
 ## Roadmap (research directions, in increasing order of difficulty)
 
-1. **Glue `ζ_ℚ = riemannZeta` in Mathlib** — prove that Mathlib's
-   `NumberField.dedekindZeta ℚ` L-series equals `riemannZeta` where both are
-   defined (classification of ideals of `ℤ`); together with
-   `riemannZetaCriticalLine` this connects `DedekindERH` for `K = ℚ` to the
-   already-proven Riemann Hypothesis. Small effort.
+1. **DONE** — glue `ζ_ℚ = riemannZeta`: `card_ideal_rat_absNorm` (exactly one
+   ideal of `𝓞 ℚ` per absolute norm) and `dedekindZeta_rat_eq_riemannZeta`
+   connect Mathlib's Dedekind zeta of `ℚ` to `riemannZeta`; the anchored
+   datum `riemannZetaDatum` and `dedekindERH_rat_of_RH` then turn the
+   machine-verified Riemann Hypothesis into the ERH statement for `ℚ`.
+   The `K = ℚ` rung of the ladder is closed.
 2. **Abelian case end-to-end**: formalize Kronecker–Weber + the conductor
    factorization `ζ_K = ∏ L(χ)`; then `abelianDedekindERH` closes ERH for all
    abelian `K` from the parent project's GRH. Cyclotomic ingredients already
