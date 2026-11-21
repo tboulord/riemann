@@ -29,8 +29,7 @@ import Mathlib
 
 set_option linter.style.haveILetI false
 
-open Complex NumberField LSeries
-open scoped LSeries.notation
+open Complex NumberField
 
 /-! ## The abstract mirror adapter -/
 
@@ -313,7 +312,7 @@ theorem dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
     (ψ : DirichletCharacter ℂ N)
     (hcoeff : ∀ n : ℕ, n ≠ 0 →
       (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
-        = ((1 : ℕ → ℂ) ⍟ (fun n : ℕ => ψ n)) n)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n)
     {s : ℂ} (hs : 1 < s.re) :
     NumberField.dedekindZeta K s
       = riemannZeta s * DirichletCharacter.LFunction ψ s := by
