@@ -436,7 +436,8 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
       rw [DirichletCharacter.LFunction_eq_completed_div_gammaFactor ψ s (Or.inr hN1)]
       field_simp
     rw [h1, h2]; ring
-  hfe := fun s _ _ => by
+  hfe := by
+    intro s _ _
     have hNc : ((N:ℂ)) ≠ 0 := by exact_mod_cast (NeZero.ne N)
     have hd : DirichletCharacter.completedLFunction ψ (1 - s)
         = (N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
