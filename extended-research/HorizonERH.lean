@@ -608,11 +608,10 @@ modulo the level, and at `1` every character is `1`. -/
 private theorem changeLevel_three_of_level_one_or_two {d : ℕ} (hd : d = 1 ∨ d = 2)
     (chi0 : DirichletCharacter ℂ d) {hdvd : d ∣ 4} :
     (DirichletCharacter.changeLevel hdvd chi0) (3 : ZMod 4) = 1 := by
-  have hcast : ((3 : ℕ) : ZMod 4) = ((3 : ℤ) : ZMod 4) := by push_cast
-    rfl
+  have hcast : ((3 : ℕ) : ZMod 4) = ((3 : ℤ) : ZMod 4) := by norm_num
   show (DirichletCharacter.changeLevel hdvd chi0) ((3 : ℕ) : ZMod 4) = 1
   rw [hcast, DirichletCharacter.changeLevel_eq_cast_of_dvd' chi0 hdvd
-    (show IsCoprime (3 : ℤ) 4 by decide)]
+    (show IsCoprime (3 : ℤ) 4 by norm_num)]
   rcases hd with rfl | rfl
   · rw [show ((3 : ℤ) : ZMod 1) = 1 by decide]
     exact map_one chi0
