@@ -65,7 +65,7 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   (`Main.lean`: `LFunction_ne_zero_of_half_lt_re := allChi`).
 - **`nonvanishing_of_dirichlet_factorization`** — Kronecker–Weber
   factorization + proven Dirichlet GRH ⟹ `ζ_K` nonzero for `Re s > 1/2`.
-  *What remains for the abelian case is only the factorization itself.*
+  *What remains: the factorization itself (the coefficient identity, classical but not yet formalized).*
 
 ### 4. The `ζ_ℚ` glue (new lemma, not previously in Mathlib)
 
@@ -98,10 +98,12 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   factor through level 1 or 2 because every level-1/2 character takes value
   1 at 3 while χ₄(3) = −1; and the conductor divides 4).
 
-### 7. The quadratic datum — ERH modulo two classical inputs
+### 7. The quadratic datum — ERH modulo exactly one input
 
-(The two remaining inputs for a concrete field: the two-squares coefficient
-identity `hcoeff`, and the nonvanishing of the root number `hroot`.)
+For `K = ℚ(i)` with `ψ = χ₄`, three of the four datum inputs are now proven
+(`chiFour_isPrimitive`, `chiFour_sq`, `chiFour_rootNumber_ne_zero` — the Gauss
+sum evaluates to `2i`, giving a nonzero root number). The **unique remaining
+input** is the two-squares coefficient identity `hcoeff`.
 
 - **`gammaFactor_ne_zero_of_re_pos`** — Dirichlet gamma-factors are zero-free
   on the right half-plane.
@@ -115,9 +117,16 @@ identity `hcoeff`, and the nonvanishing of the root number `hroot`.)
   step), the anchor field is fed by the coefficient identity, the FE and
   gamma factor are fully verified.
 - **`dedekindERH_quadratic_modulo_twoSquares`** — the rung closed: given the
-  two-squares coefficient identity and the classical nonvanishing of the
-  root number (|rootNumber| = 1 via Gauss sums — not yet in Mathlib), the
-  proven Dirichlet GRH yields full `DedekindERH K` (e.g. `K = ℚ(i)`).
+  two-squares coefficient identity and (for general `ψ`) the nonvanishing of the
+  root number — proven for `χ₄` in §6, classical for all quadratic `ψ` —
+  the proven Dirichlet GRH yields full `DedekindERH K` (e.g. `K = ℚ(i)`).
+
+- **`gaussSum_chiFour`** — the classical Gauss sum computation
+  (`gaussSum chiFour stdAddChar = 2·i`, only units 1 and 3 contribute).
+- **`chiFour_rootNumber_ne_zero`** — the root number of `χ₄` is nonzero.
+- **`dedekindERH_quadratic_i_assembled`** — the assembly: given only the
+  two-squares identity `hcoeff`, the proven Dirichlet GRH yields the full
+  `DedekindERH K` through the quadratic datum at `χ₄`.
 
 ### 8. No Siegel zeros
 
@@ -140,7 +149,7 @@ identity `hcoeff`, and the nonvanishing of the root number `hroot`.)
   equal the Dirichlet convolution `1 ⍟ ψ`, then `ζ_K = ζ · L(ψ)` on the
   convergence half-plane (via Mathlib's `LSeries_convolution`). For
   `K = ℚ(i)`, `ψ = χ₄`, the coefficient identity is the classical
-  two-squares count — the **unique remaining analytic input** of that rung.
+  two-squares count — the **unique remaining arithmetic input** of that rung (the root number input is now proven, see §7).
 - **`dedekindERH_quadratic_of_twoSquares`** — the rung assembled: given the
   strip-level equality `ζ_K = ζ · L(χ₄)` (coefficient identity + identity
   theorem), the proven Dirichlet GRH yields the full `DedekindERH` for `K`.

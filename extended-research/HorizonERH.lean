@@ -730,12 +730,6 @@ theorem gaussSum_chiFour : gaussSum chiFour ZMod.stdAddChar = 2 * I := by
   rw [huniv, Finset.sum_insert (by decide), Finset.sum_insert (by decide),
     Finset.sum_insert (by decide), Finset.sum_singleton]
   -- Goal: right-associative sum of four terms
-  have hv1 : chiFour (1 : ZMod 4) * ZMod.stdAddChar (1 : ZMod 4) = I := by
-    rw [chiFour_one, stdAddChar_one]
-    simp
-  have hv3 : chiFour (3 : ZMod 4) * ZMod.stdAddChar (3 : ZMod 4) = I := by
-    rw [chiFour_three, stdAddChar_three]
-    simp
   rw [show
     chiFour (0 : ZMod 4) * ZMod.stdAddChar (0 : ZMod 4)
       + (chiFour (1 : ZMod 4) * ZMod.stdAddChar (1 : ZMod 4)
@@ -763,6 +757,23 @@ theorem chiFour_rootNumber_ne_zero : DirichletCharacter.rootNumber chiFour ≠ 0
 
 #print axioms gaussSum_chiFour
 #print axioms chiFour_rootNumber_ne_zero
+
+/-- **ERH for ℚ(i), assembled.** For any number field `K` whose ideal counts
+satisfy the two-squares identity with `chi_4` (the unique remaining input),
+the proven Dirichlet GRH yields the full `DedekindERH K` through the
+quadratic datum instantiated at `chi_4` (primitive, quadratic, nonzero root
+number). -/
+theorem dedekindERH_quadratic_i_assembled (hgrh : DirichletGRH)
+    {K : Type*} [Field K] [NumberField K]
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => chiFour n)) n) :
+    DedekindERH K (quadraticDatum (N := 4) four_ne_one chiFour
+      chiFour_isPrimitive chiFour_sq chiFour_rootNumber_ne_zero hcoeff) :=
+  dedekindERH_quadratic_modulo_twoSquares hgrh four_ne_one chiFour
+    chiFour_isPrimitive chiFour_sq chiFour_rootNumber_ne_zero hcoeff
+
+#print axioms dedekindERH_quadratic_i_assembled
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
