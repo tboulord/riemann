@@ -565,8 +565,8 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       have hvv : ((0 : ℕ) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
     rw [MulChar.mul_apply, h0, mul_zero]
-    exact MulChar.map_nonunit (1 : DirichletCharacter ℂ 4)
-      (show ¬ IsUnit ((0 : ℕ) : ZMod 4) by decide)
+    exact (MulChar.map_nonunit (1 : DirichletCharacter ℂ 4)
+      (show ¬ IsUnit ((0 : ℕ) : ZMod 4) by decide)).symm
   · have ha1 : a = ((1 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h, Nat.cast_one]
     subst ha1
@@ -584,8 +584,8 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       have hvv : ((2 : ℕ) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
     rw [MulChar.mul_apply, h2v, mul_zero]
-    exact MulChar.map_nonunit (1 : DirichletCharacter ℂ 4)
-      (show ¬ IsUnit ((0 : ℕ) : ZMod 4) by decide)
+    exact (MulChar.map_nonunit (1 : DirichletCharacter ℂ 4)
+      (show ¬ IsUnit ((2 : ℕ) : ZMod 4) by decide)).symm
   · have ha3 : a = ((3 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h]
     subst ha3
@@ -611,7 +611,7 @@ private theorem changeLevel_three_of_level_one_or_two {d : ℕ} (hd : d = 1 ∨ 
   have hcast : ((3 : ℕ) : ZMod 4) = ((3 : ℤ) : ZMod 4) := by push_cast
   show (DirichletCharacter.changeLevel hdvd chi0) ((3 : ℕ) : ZMod 4) = 1
   rw [hcast, DirichletCharacter.changeLevel_eq_cast_of_dvd' chi0 hdvd
-    (show IsCoprime (3 : ℤ) 4 by norm_num)]
+    (show IsCoprime (3 : ℤ) 4 by decide)]
   rcases hd with rfl | rfl
   · have h31 : ((3 : ℤ) : ZMod 1) = 1 := by decide
     rw [h31]
