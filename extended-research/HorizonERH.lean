@@ -513,7 +513,9 @@ private theorem chiFourFun_mul (a b : ZMod 4) :
 
 /-- The primitive quadratic Dirichlet character chi_4 modulo 4. -/
 noncomputable def chiFour : DirichletCharacter ℂ 4 :=
-  MulChar.mk ⟨chiFourFun, by simp [chiFourFun], fun _ _ => chiFourFun_mul _ _, by
+  MulChar.mk
+    (MonoidHom.mk (OneHom.mk chiFourFun (by simp [chiFourFun]))
+      (fun _ _ => chiFourFun_mul _ _)) (by
     intro a ha
     have hc : ¬ (a : ZMod 4).val.Coprime 4 := by
       intro h
@@ -547,11 +549,11 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
   rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
     ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
   · have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
-      MulChar.map_nonunit _ (by simp)
+      MulChar.map_nonunit _ (by decide)
     simp [chiFour, chiFourFun, h1]
   · simp [chiFour, chiFourFun, h]
   · have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
-      MulChar.map_nonunit _ (by simp)
+      MulChar.map_nonunit _ (by decide)
     simp [chiFour, chiFourFun, h1]
   · simp [chiFour, chiFourFun, h]
 
