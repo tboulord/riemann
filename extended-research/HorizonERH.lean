@@ -555,26 +555,31 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
   apply MulChar.ext'
   intro a
   have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
-  rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
-    ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
-  · have ha0 : a = 0 := by
-      apply ZMod.val_injective
-      rw [ZMod.val_cast_of_lt (by norm_num)]
-      exact h.symm
-    subst ha0
-    have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
+  rcases (by omega : (a : ZMod 4).val = 0 â¨ (a : ZMod 4).val = 1
+    â¨ (a : ZMod 4).val = 2 â¨ (a : ZMod 4).val = 3) with h | h | h | h
+  Â· have ha : a = 0 := by rw [â ZMod.natCast_zmod_val a, h, Nat.cast_zero]
+    subst ha
+    have h1 : ((1 : DirichletCharacter â 4) (0 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by decide)
     simp [chiFour, chiFourFun, h1]
-  · simp [chiFour, chiFourFun, h]
-  · have ha2 : a = 2 := by
-      apply ZMod.val_injective
-      rw [ZMod.val_cast_of_lt (by norm_num)]
-      exact h.symm
-    subst ha2
-    have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
+  Â· have ha : a = 1 := by rw [â ZMod.natCast_zmod_val a, h, Nat.cast_one]
+    subst ha
+    have h1 : ((1 : DirichletCharacter â 4) (1 : ZMod 4)) = 1 := map_one _
+    simp [chiFour, chiFourFun, h1]
+  Â· have ha : a = 2 := by rw [â ZMod.natCast_zmod_val a, h, Nat.cast_two]
+    subst ha
+    have h1 : ((1 : DirichletCharacter â 4) (2 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by decide)
     simp [chiFour, chiFourFun, h1]
-  · simp [chiFour, chiFourFun, h]
+  Â· have hu : IsUnit (a : ZMod 4) := by
+      rw [ZMod.isUnit_iff_coprime, h]
+      norm_num
+    obtain â¨u, rflâ© := hu
+    have hc : chiFour (u : ZMod 4) = -1 := by
+      show chiFourFun (u : ZMod 4) = -1
+      simp only [chiFourFun, h]
+    rw [hc, MulChar.mul_apply, MulChar.one_apply_coe]
+    ring
 
 /-- Every Dirichlet character of level 1 or 2 takes the value `1` at `3`
 (when pulled back to level 4): the value only depends on the residue of `3`
