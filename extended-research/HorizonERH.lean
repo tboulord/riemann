@@ -446,7 +446,7 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
   ε := (DirichletCharacter.rootNumber ψ)⁻¹
   agrees := ⟨2, by norm_num, fun z hz =>
     (dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution ψ hcoeff
-      (by simp only [Set.mem_setOf] at hz; linarith)).symm⟩
+      (by simp only [Set.mem_ofPred] at hz; linarith)).symm⟩
   hε := inv_ne_zero hroot
   hγ := fun s hs0 _ => mul_ne_zero
     (Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast (NeZero.ne N))))
@@ -511,7 +511,14 @@ private theorem chiFourFun_mul (a b : ZMod 4) :
     ∨ (b : ZMod 4).val = 2 ∨ (b : ZMod 4).val = 3) with hvb | hvb | hvb | hvb <;>
     simp [chiFourFun, hmul, hva, hvb]
 
-/-- The primitive quadratic Dirichlet character chi_4 modulo 4. -/
+/-- The primitive quadratic Dirichlet character chi_4 modulo 4.
+
+Note: Mathlib at the pinned revision already defines `ZMod.χ₄ : MulChar (ZMod 4) ℤ`
+(with value lemmas and quadraticity, in `LegendreSymbol/ZModChar.lean`); the
+construction below is the ℂ-valued `DirichletCharacter ℂ 4` consumed directly
+by the GRH/datum statements. It is equivalent to `ZMod.χ₄` composed with the
+integer-to-complex cast. -/
+
 noncomputable def chiFour : DirichletCharacter ℂ 4 :=
   MulChar.mk
     (MonoidHom.mk (OneHom.mk chiFourFun (by

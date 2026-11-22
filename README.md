@@ -90,13 +90,18 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 
 - **`chiFour`** — the primitive quadratic Dirichlet character mod 4, defined
   computationally by residue (`chi_4(1)=1`, `chi_4(3)=-1`, zero elsewhere),
-  with verified values.
+  with verified values. (Mathlib already provides the ℤ-valued `ZMod.χ₄`;
+  `chiFour` is the ℂ-valued `DirichletCharacter ℂ 4` needed by the statements,
+  equivalent to `ZMod.χ₄` cast to ℂ.)
 - **`chiFour_sq`** — χ₄ is quadratic (`χ₄ * χ₄ = 1`), by four-case evaluation.
 - **`chiFour_isPrimitive`** — χ₄ is primitive: its conductor is 4 (it cannot
   factor through level 1 or 2 because every level-1/2 character takes value
   1 at 3 while χ₄(3) = −1; and the conductor divides 4).
 
-### 7. The quadratic datum — ERH modulo exactly the two-squares count
+### 7. The quadratic datum — ERH modulo two classical inputs
+
+(The two remaining inputs for a concrete field: the two-squares coefficient
+identity `hcoeff`, and the nonvanishing of the root number `hroot`.)
 
 - **`gammaFactor_ne_zero_of_re_pos`** — Dirichlet gamma-factors are zero-free
   on the right half-plane.
