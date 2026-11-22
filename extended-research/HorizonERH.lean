@@ -547,6 +547,11 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
   show chiFourFun ((1 : ℕ) : ZMod 4) = 1
   simp only [chiFourFun, hv]
 
+@[simp] theorem chiFour_zero : chiFour (0 : ZMod 4) = 0 := by
+  show chiFourFun ((0 : ℕ) : ZMod 4) = 0
+  have hvv : ((0 : ℕ) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
+  simp only [chiFourFun, hvv]
+
 @[simp] theorem chiFour_two : chiFour (2 : ZMod 4) = 0 := by
   have hv : ((2 : ℕ) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
   show chiFourFun ((2 : ℕ) : ZMod 4) = 0
@@ -663,6 +668,101 @@ theorem chiFour_isPrimitive : DirichletCharacter.IsPrimitive chiFour := by
 
 #print axioms chiFour_sq
 #print axioms chiFour_isPrimitive
+
+/-! ## The Gauss sum of chi_4 and the nonvanishing of its root number -/
+
+private theorem stdAddChar_one : ZMod.stdAddChar (1 : ZMod 4) = I := by
+  show ZMod.stdAddChar ((1 : ℤ) : ZMod 4) = I
+  rw [ZMod.stdAddChar_coe]
+  have h1 : Complex.exp (2 * (Real.pi : ℂ) * I * ((1 : ℤ) : ℂ) / ((4 : ℕ) : ℂ))
+      = Complex.exp ((Real.pi : ℂ) / 2 * I) := by
+    congr 2
+    push_cast
+    field_simp
+    norm_num
+  rw [h1, Complex.exp_mul_I]
+  have hc : Complex.cos ((Real.pi : ℂ) / 2) = 0 := by
+    exact_mod_cast Real.cos_pi_div_two
+  have hs : Complex.sin ((Real.pi : ℂ) / 2) = 1 := by
+    exact_mod_cast Real.sin_pi_div_two
+  rw [hc, hs]
+  simp
+
+private theorem stdAddChar_three : ZMod.stdAddChar (3 : ZMod 4) = -I := by
+  show ZMod.stdAddChar ((3 : ℤ) : ZMod 4) = -I
+  rw [ZMod.stdAddChar_coe]
+  have h1 : Complex.exp (2 * (Real.pi : ℂ) * I * ((3 : ℤ) : ℂ) / ((4 : ℕ) : ℂ))
+      = Complex.exp ((3 * (Real.pi : ℂ) / 2) * I) := by
+    congr 2
+    push_cast
+    field_simp
+    norm_num
+  rw [h1, Complex.exp_mul_I]
+  have hcp : Complex.cos ((Real.pi : ℂ)) = -1 := by exact_mod_cast Real.cos_pi
+  have hsp : Complex.sin ((Real.pi : ℂ)) = 0 := by exact_mod_cast Real.sin_pi
+  have hc2 : Complex.cos ((Real.pi : ℂ) / 2) = 0 := by
+    exact_mod_cast Real.cos_pi_div_two
+  have hs2 : Complex.sin ((Real.pi : ℂ) / 2) = 1 := by
+    exact_mod_cast Real.sin_pi_div_two
+  have hc : Complex.cos (3 * (Real.pi : ℂ) / 2) = 0 := by
+    have h : Complex.cos (3 * (Real.pi : ℂ) / 2)
+        = Complex.cos ((Real.pi : ℂ) + (Real.pi : ℂ) / 2) := by
+      congr 1
+      ring_nf
+    rw [h, Complex.cos_add, hcp, hc2, hsp, hs2]
+    simp
+  have hs : Complex.sin (3 * (Real.pi : ℂ) / 2) = -1 := by
+    have h : Complex.sin (3 * (Real.pi : ℂ) / 2)
+        = Complex.sin ((Real.pi : ℂ) + (Real.pi : ℂ) / 2) := by
+      congr 1
+      ring_nf
+    rw [h, Complex.sin_add, hcp, hc2, hsp, hs2]
+    simp
+  rw [hc, hs]
+  simp
+
+set_option maxHeartbeats 1000000 in
+/-- The classical Gauss sum: `gaussSum chiFour stdAddChar = 2 * I`
+(only the units 1 and 3 contribute: `1 * I + (-1) * (-I) = 2 * I`). -/
+theorem gaussSum_chiFour : gaussSum chiFour ZMod.stdAddChar = 2 * I := by
+  rw [gaussSum]
+  have huniv : (Finset.univ : Finset (ZMod 4)) = {0, 1, 2, 3} := by decide
+  rw [huniv, Finset.sum_insert (by decide), Finset.sum_insert (by decide),
+    Finset.sum_insert (by decide), Finset.sum_singleton]
+  -- Goal: right-associative sum of four terms
+  have hv1 : chiFour (1 : ZMod 4) * ZMod.stdAddChar (1 : ZMod 4) = I := by
+    rw [chiFour_one, stdAddChar_one]
+    simp
+  have hv3 : chiFour (3 : ZMod 4) * ZMod.stdAddChar (3 : ZMod 4) = I := by
+    rw [chiFour_three, stdAddChar_three]
+    simp
+  rw [show
+    chiFour (0 : ZMod 4) * ZMod.stdAddChar (0 : ZMod 4)
+      + (chiFour (1 : ZMod 4) * ZMod.stdAddChar (1 : ZMod 4)
+        + (chiFour (2 : ZMod 4) * ZMod.stdAddChar (2 : ZMod 4)
+          + chiFour (3 : ZMod 4) * ZMod.stdAddChar (3 : ZMod 4))) = 2 * I from by
+    have hz : chiFour (0 : ZMod 4) * ZMod.stdAddChar (0 : ZMod 4) = 0 := by
+      rw [chiFour_zero, zero_mul]
+    have hz2 : chiFour (2 : ZMod 4) * ZMod.stdAddChar (2 : ZMod 4) = 0 := by
+      rw [chiFour_two, zero_mul]
+    have h1 : chiFour (1 : ZMod 4) * ZMod.stdAddChar (1 : ZMod 4) = I := by
+      rw [chiFour_one, stdAddChar_one]
+      simp
+    have h3 : chiFour (3 : ZMod 4) * ZMod.stdAddChar (3 : ZMod 4) = I := by
+      rw [chiFour_three, stdAddChar_three]
+      simp
+    rw [hz, hz2, h1, h3]
+    ring]
+
+/-- **The root number of chi_4 is nonzero.** -/
+theorem chiFour_rootNumber_ne_zero : DirichletCharacter.rootNumber chiFour ≠ 0 := by
+  rw [DirichletCharacter.rootNumber, gaussSum_chiFour]
+  refine div_ne_zero (div_ne_zero (mul_ne_zero (by norm_num) Complex.I_ne_zero) ?_) ?_
+  · exact pow_ne_zero _ Complex.I_ne_zero
+  · exact Complex.cpow_ne_zero_iff.mpr (Or.inl (by norm_num))
+
+#print axioms gaussSum_chiFour
+#print axioms chiFour_rootNumber_ne_zero
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
