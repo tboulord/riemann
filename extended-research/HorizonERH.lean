@@ -464,6 +464,28 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
     rw [h1, h2]; ring
   hfe := fun s => quadraticTwist_fe ψ hprim hquad hroot s
 
+/-- **The quadratic ERH rung, closed modulo exactly two classical inputs.**
+Given the two-squares coefficient identity (`hcoeff`) and the classical
+nonvanishing of the root number (`hroot`; |rootNumber| = 1 via Gauss sums),
+the proven Dirichlet GRH yields the full `DedekindERH` for any `K` whose
+zeta factors as `ζ · L(ψ)` with `ψ` primitive quadratic — e.g. `K = ℚ(i)`
+with `ψ = χ₄` (conductor 4) or `K = ℚ(√d)` with the Kronecker character of
+`d`. -/
+theorem dedekindERH_quadratic_modulo_twoSquares (hgrh : DirichletGRH)
+    {K : Type*} [Field K] [NumberField K] {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
+    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
+    (hquad : ψ * ψ = 1) (hroot : DirichletCharacter.rootNumber ψ ≠ 0)
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n) :
+    DedekindERH K (quadraticDatum hN1 ψ hprim hquad hroot hcoeff) := by
+  intro z hz hz1 hz0
+  have h0 : riemannZeta z * DirichletCharacter.LFunction ψ z = 0 := hz0
+  rcases mul_eq_zero.1 h0 with h | h
+  · exact hgrh 1 (1 : DirichletCharacter ℂ 1) z hz (Or.inr hz1) (by simpa using h)
+  · exact hgrh N ψ z hz (Or.inr hz1) h
+
+#print axioms dedekindERH_quadratic_modulo_twoSquares
 #print axioms gammaFactor_ne_zero_of_re_pos
 #print axioms quadraticDatum
 
