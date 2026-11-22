@@ -551,36 +551,51 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
   simp only [chiFourFun, hv]
 
 /-- chi_4 is quadratic: `chi_4 * chi_4 = 1`. -/
+/-- chi_4 is quadratic: chi_4 * chi_4 = 1. -/
 theorem chiFour_sq : chiFour * chiFour = 1 := by
   apply MulChar.ext'
   intro a
   have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
-  rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
-    ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
-  · have ha0 : a = ((0 : ℕ) : ZMod 4) := by
-      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_zero]
+  rcases (by omega : (a : ZMod 4).val = 0 â¨ (a : ZMod 4).val = 1
+    â¨ (a : ZMod 4).val = 2 â¨ (a : ZMod 4).val = 3) with h | h | h | h
+  Â· have ha0 : a = ((0 : â) : ZMod 4) := by
+      rw [â ZMod.natCast_zmod_val a, h, Nat.cast_zero]
     subst ha0
-    have h1 : ((1 : DirichletCharacter ℂ 4) ((0 : ℕ) : ZMod 4)) = 0 :=
-      MulChar.map_nonunit _ (by decide)
-    simp [chiFour, chiFourFun, h1]
-  · have ha1 : a = ((1 : ℕ) : ZMod 4) := by
-      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_one]
+    have h0 : chiFour ((0 : â) : ZMod 4) = 0 := by
+      show chiFourFun ((0 : â) : ZMod 4) = 0
+      have hvv : ((0 : â) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
+      simp only [chiFourFun, hvv]
+    rw [MulChar.mul_apply, h0, h0, mul_zero]
+    exact MulChar.map_nonunit _ (by decide)
+  Â· have ha1 : a = ((1 : â) : ZMod 4) := by
+      rw [â ZMod.natCast_zmod_val a, h, Nat.cast_one]
     subst ha1
-    have h1 : ((1 : DirichletCharacter ℂ 4) ((1 : ℕ) : ZMod 4)) = 1 := map_one _
-    simp [chiFour, chiFourFun, h1]
-  · have ha2 : a = ((2 : ℕ) : ZMod 4) := by
-      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_two]
+    have h1v : chiFour ((1 : â) : ZMod 4) = 1 := by
+      show chiFourFun ((1 : â) : ZMod 4) = 1
+      have hvv : ((1 : â) : ZMod 4).val = 1 := ZMod.val_cast_of_lt (by norm_num)
+      simp only [chiFourFun, hvv]
+    rw [MulChar.mul_apply, h1v, h1v, mul_one]
+    exact map_one _
+  Â· have ha2 : a = ((2 : â) : ZMod 4) := by
+      rw [â ZMod.natCast_zmod_val a, h, Nat.cast_two]
     subst ha2
-    have h1 : ((1 : DirichletCharacter ℂ 4) ((2 : ℕ) : ZMod 4)) = 0 :=
-      MulChar.map_nonunit _ (by decide)
-    simp [chiFour, chiFourFun, h1]
-  · have hu : IsUnit (a : ZMod 4) := by
-      rw [ZMod.isUnit_iff_coprime, h]
-      norm_num
-    obtain ⟨u, rfl⟩ := hu
+    have h2v : chiFour ((2 : â) : ZMod 4) = 0 := by
+      show chiFourFun ((2 : â) : ZMod 4) = 0
+      have hvv : ((2 : â) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
+      simp only [chiFourFun, hvv]
+    rw [MulChar.mul_apply, h2v, h2v, mul_zero]
+    exact MulChar.map_nonunit _ (by decide)
+  Â· have ha3 : a = ((3 : â) : ZMod 4) := by
+      rw [â ZMod.natCast_zmod_val a, h]
+    subst ha3
+    have hu : IsUnit ((3 : â) : ZMod 4) := by
+      rw [ZMod.isUnit_iff_coprime]; norm_num
+    obtain â¨u, rflâ© := hu
     have hc : chiFour (u : ZMod 4) = -1 := by
       show chiFourFun (u : ZMod 4) = -1
-      simp only [chiFourFun, h]
+      have hvv : ((u : ZMod 4) : ZMod 4).val = 3 := by
+        rw [show (u : ZMod 4) = ((3 : â) : ZMod 4) from rfl, ZMod.val_cast_of_lt (by norm_num)]
+      simp only [chiFourFun, hvv]
     rw [hc, MulChar.mul_apply, MulChar.one_apply_coe]
     ring
 
