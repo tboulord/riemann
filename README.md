@@ -86,7 +86,25 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`riemannHypothesis_iff_dedekindERH_rat`** — RH and ERH(ℚ) are
   **equivalent**, machine-checked in both directions.
 
-### 6. No Siegel zeros
+### 6. The quadratic datum — ERH modulo exactly the two-squares count
+
+- **`gammaFactor_ne_zero_of_re_pos`** — Dirichlet gamma-factors are zero-free
+  on the right half-plane.
+- **`quadraticTwist_fe`** — the twisted product `N^(s²/2) · Λ_ζ · Λ_ψ`
+  satisfies a functional equation with the *constant* root number inverted
+  (the non-constant factor `N^(s-1/2)` of Dirichlet's FE is absorbed by the
+  twist, via `(1-s)²/2 + (s - 1/2) = s²/2`).
+- **`quadraticDatum`** — a complete `DedekindZetaDatum K` for any `K` whose
+  zeta factors as `ζ · L(ψ)` with `ψ` primitive quadratic: the continuation
+  *is* the product (strip identity by construction — no identity-theorem
+  step), the anchor field is fed by the coefficient identity, the FE and
+  gamma factor are fully verified.
+- **`dedekindERH_quadratic_modulo_twoSquares`** — the rung closed: given the
+  two-squares coefficient identity and the classical nonvanishing of the
+  root number (|rootNumber| = 1 via Gauss sums — not yet in Mathlib), the
+  proven Dirichlet GRH yields full `DedekindERH K` (e.g. `K = ℚ(i)`).
+
+### 7. No Siegel zeros
 
 - **`DirichletCriticalLine`** — the exact shape of the parent project's proven
   `DirichletLZerosOnLine` (`Main.lean`: `LFunction_eq_zero_re := claimAll.2.1`).
@@ -97,7 +115,7 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`LFunction_one_ne_zero`** — Dirichlet's nonvanishing `L(χ, 1) ≠ 0` for
   non-principal `χ`, as a corollary of the proven GRH shape.
 
-### 7. The ℚ(i) / two-squares rung (the abelian gate, reduced)
+### 8. The ℚ(i) / two-squares rung (the abelian gate, reduced)
 
 - **`nonvanishing_of_dirichlet_family`** — mixed-level Dirichlet products:
   the factor family may combine L-functions of *different* conductors
@@ -112,7 +130,7 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   strip-level equality `ζ_K = ζ · L(χ₄)` (coefficient identity + identity
   theorem), the proven Dirichlet GRH yields the full `DedekindERH` for `K`.
 
-### 8. The Hecke and Artin rungs (interfaces and the Brauer reduction)
+### 9. The Hecke and Artin rungs (interfaces and the Brauer reduction)
 
 - **`ERHFamily` + `dedekindERH_of_heckeERH`** — `ζ_K` is the Hecke
   L-function of the trivial Grössencharakter; ERH for any family containing
