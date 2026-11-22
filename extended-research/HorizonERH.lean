@@ -417,7 +417,7 @@ private theorem quadraticTwist_fe {N : ℕ} [NeZero N]
     fun a b => Complex.cpow_add a b hNc
   rw [hd, completedRiemannZeta_one_sub s]
   simp only [mul_assoc, mul_comm, mul_left_comm]
-  rw [mul_assoc ψ.rootNumber ψ.rootNumber⁻¹ _, mul_inv_cancel₀ hroot, one_mul, ← hpow]
+  rw [← mul_assoc ψ.rootNumber ψ.rootNumber⁻¹ _, mul_inv_cancel₀ hroot, one_mul, ← hpow]
   congr 1
   ring
 
