@@ -395,16 +395,6 @@ theorem gammaFactor_ne_zero_of_re_pos {N : ℕ} [NeZero N]
     refine Gammaℝ_ne_zero_of_re_pos ?_
     rw [Complex.add_re, Complex.one_re]; linarith
 
-/-- **The quadratic Dedekind-zeta datum.** For a number field `K` whose
-Dedekind zeta factors as `ζ · L(ψ)` with `ψ` a primitive quadratic character
-(`ψ * ψ = 1`), this *constructs* the full `DedekindZetaDatum K`:
-the continuation is the product `ζ · L(ψ)` (so the strip-level identity holds
-by definition — no identity-theorem step needed), the anchor field `agrees`
-is supplied by the coefficient identity (`hcoeff`), and the completed form
-`N ^ (s²/2) · Λ_ζ · Λ_ψ` satisfies a functional equation with the *constant*
-root number `rootNumber ψ` (the non-constant factor `N ^ (s - 1/2)` in
-Dirichlet's functional equation is absorbed by the `N ^ (s²/2)` twist, since
-`(1-s)²/2 + (s - 1/2) = s²/2`). -/
 /-- Functional equation of the twisted product `N ^ (s²/2) · Λ_ζ · Λ_ψ`
 for a primitive *quadratic* character `ψ`: it is symmetric up to the
 *constant* `rootNumber ψ` inverted. The key exponent identity is
@@ -425,10 +415,20 @@ private theorem quadraticTwist_fe {N : ℕ} [NeZero N]
     rw [show ψ⁻¹ = ψ from inv_eq_of_mul_eq_one_left hquad]
   rw [hd, completedRiemannZeta_one_sub s]
   simp only [mul_assoc, mul_comm, mul_left_comm]
-  rw [inv_mul_cancel₀ hroot, one_mul, ← Complex.cpow_add _ _ hNc]
+  rw [mul_inv_cancel₀ hroot, one_mul, ← Complex.cpow_add _ _ hNc]
   congr 1
   ring
 
+/-- **The quadratic Dedekind-zeta datum.** For a number field `K` whose
+Dedekind zeta factors as `ζ · L(ψ)` with `ψ` a primitive quadratic character
+(`ψ * ψ = 1`), this *constructs* the full `DedekindZetaDatum K`:
+the continuation is the product `ζ · L(ψ)` (so the strip-level identity holds
+by definition — no identity-theorem step needed), the anchor field `agrees`
+is supplied by the coefficient identity (`hcoeff`), and the completed form
+`N ^ (s²/2) · Λ_ζ · Λ_ψ` satisfies a functional equation with the *constant*
+root number `rootNumber ψ` (the non-constant factor `N ^ (s - 1/2)` in
+Dirichlet's functional equation is absorbed by the `N ^ (s²/2)` twist, since
+`(1-s)²/2 + (s - 1/2) = s²/2`). -/
 noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
     {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
     (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
@@ -460,7 +460,7 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
       rw [DirichletCharacter.LFunction_eq_completed_div_gammaFactor ψ s (Or.inr hN1)]
       field_simp
     rw [h1, h2]; ring
-  hfe := fun s _ _ => quadraticTwist_fe ψ hprim hquad hroot s
+  hfe := fun s => quadraticTwist_fe ψ hprim hquad hroot s
 
 #print axioms gammaFactor_ne_zero_of_re_pos
 #print axioms quadraticDatum
