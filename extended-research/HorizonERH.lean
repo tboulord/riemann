@@ -505,23 +505,30 @@ private theorem chiFourFun_mul (a b : ZMod 4) :
     ZMod.val_mul a b
   have ha : (a : ZMod 4).val < 4 := ZMod.val_lt a
   have hb : (b : ZMod 4).val < 4 := ZMod.val_lt b
-  interval_cases (a : ZMod 4).val
-  all_goals interval_cases (b : ZMod 4).val
-  all_goals simp [chiFourFun, hmul]
+  rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
+    ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with hva | hva | hva | hva <;>
+    rcases (by omega : (b : ZMod 4).val = 0 ∨ (b : ZMod 4).val = 1
+    ∨ (b : ZMod 4).val = 2 ∨ (b : ZMod 4).val = 3) with hvb | hvb | hvb | hvb <;>
+    simp [chiFourFun, hmul, hva, hvb]
 
 /-- The primitive quadratic Dirichlet character chi_4 modulo 4. -/
 noncomputable def chiFour : DirichletCharacter ℂ 4 :=
-  MulChar.mk ⟨chiFourFun, by simp [chiFourFun], fun _ _ => chiFourFun_mul _ _⟩ (by
+  MulChar.mk ⟨chiFourFun, by simp [chiFourFun], fun _ _ => chiFourFun_mul _ _, by
     intro a ha
-    have hI : IsUnit ((a : ZMod 4).val : ZMod 4) := by
-      rwa [ZMod.natCast_zmod_cast a] at ha
-    have hc : (a : ZMod 4).val.Coprime 4 := (ZMod.isUnit_iff_coprime _ 4).mp hI
+    have hc : ¬ (a : ZMod 4).val.Coprime 4 := by
+      intro h
+      apply ha
+      have hI : IsUnit ((a : ZMod 4).val : ZMod 4) := (ZMod.isUnit_iff_coprime _ 4).mpr h
+      rwa [ZMod.natCast_zmod_val a] at hI
     have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
-    rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 2) with h | h
+    rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
+      ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
     · show chiFourFun a = 0
       simp [chiFourFun, h]
+    · exact absurd (by rw [h]; norm_num) hc
     · show chiFourFun a = 0
-      simp [chiFourFun, h])
+      simp [chiFourFun, h]
+    · exact absurd (by rw [h]; norm_num) hc⟩
 
 @[simp] theorem chiFour_one : chiFour (1 : ZMod 4) = 1 := by
   simp [chiFour, MulChar.coe_mk, chiFourFun]
@@ -537,15 +544,16 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
   apply MulChar.ext'
   intro a
   have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
-  interval_cases (a : ZMod 4).val
+  rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
+    ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
   · have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by simp)
     simp [chiFour, chiFourFun, h1]
-  · simp [chiFour, chiFourFun]
+  · simp [chiFour, chiFourFun, h]
   · have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by simp)
     simp [chiFour, chiFourFun, h1]
-  · simp [chiFour, chiFourFun]
+  · simp [chiFour, chiFourFun, h]
 
 /-- Every Dirichlet character of level 1 or 2 takes the value `1` at `3`
 (when pulled back to level 4): the value only depends on the residue of `3`
@@ -577,31 +585,29 @@ theorem chiFour_isPrimitive : DirichletCharacter.IsPrimitive chiFour := by
       ∧ DirichletCharacter.conductor chiFour ≠ 2 := by
     constructor
     · intro e
-      have hc : DirichletCharacter.FactorsThrough chiFour 1 := by
-        rw [e] at hfac
-        exact hfac
-      have hEq := hc.eq_changeLevel
-      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4)) hEq
-      rw [changeLevel_three_of_level_one_or_two (Or.inl rfl) _] at h3
-      rw [chiFour_three] at h3
+      rw [e] at hfac
+      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4))
+        hfac.eq_changeLevel
+      rw [changeLevel_three_of_level_one_or_two (Or.inl rfl) _, chiFour_three] at h3
       exact absurd h3 (by norm_num)
     · intro e
-      have hc : DirichletCharacter.FactorsThrough chiFour 2 := by
-        rw [e] at hfac
-        exact hfac
-      have hEq := hc.eq_changeLevel
-      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4)) hEq
-      rw [changeLevel_three_of_level_one_or_two (Or.inr rfl) _] at h3
-      rw [chiFour_three] at h3
+      rw [e] at hfac
+      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4))
+        hfac.eq_changeLevel
+      rw [changeLevel_three_of_level_one_or_two (Or.inr rfl) _, chiFour_three] at h3
       exact absurd h3 (by norm_num)
   have hle : DirichletCharacter.conductor chiFour ≤ 4 := Nat.le_of_dvd four_pos hdvd
   show DirichletCharacter.conductor chiFour = 4
-  interval_cases DirichletCharacter.conductor chiFour with hc
-  · exact absurd hc h0
-  · exact absurd hc hne12.1
-  · exact absurd hc hne12.2
-  · exact absurd hdvd (by norm_num)
-  · rfl
+  rcases (by omega : DirichletCharacter.conductor chiFour = 0
+    ∨ DirichletCharacter.conductor chiFour = 1 ∨ DirichletCharacter.conductor chiFour = 2
+    ∨ DirichletCharacter.conductor chiFour = 3 ∨ DirichletCharacter.conductor chiFour = 4) with
+    h | h | h | h | h
+  · exact absurd h h0
+  · exact absurd h hne12.1
+  · exact absurd h hne12.2
+  · rw [h] at hdvd
+    exact absurd hdvd (by norm_num)
+  · exact h
 
 #print axioms chiFour_sq
 #print axioms chiFour_isPrimitive
