@@ -55,7 +55,7 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`DedekindERH`** — the target statement of the ERH extension.
 - **`dedekindZetaCriticalLine`** — the adapter instantiated for `ζ_K`.
 
-### 3. The abelian rung, plugged into the *proven* Dirichlet GRH
+### 3. The abelian rung, under the Dirichlet GRH hypothesis
 
 - **`nonvanishing_right_of_product` / `abelianDedekindERH`** (pole-aware at
   `s = 1`) — a factorization of `ζ_K` into Dirichlet L-functions
@@ -100,10 +100,14 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 
 ### 7. The quadratic datum — ERH modulo exactly one input
 
-For `K = ℚ(i)` with `ψ = χ₄`, three of the four datum inputs are now proven
-(`chiFour_isPrimitive`, `chiFour_sq`, `chiFour_rootNumber_ne_zero` — the Gauss
-sum evaluates to `2i`, giving a nonzero root number). The **unique remaining
-input** is the two-squares coefficient identity `hcoeff`.
+For `ψ = χ₄`, three of the four datum inputs are proven (`chiFour_isPrimitive`,
+`chiFour_sq`, `chiFour_rootNumber_ne_zero` — the Gauss sum evaluates to `2i`).
+The remaining input is the two-squares coefficient identity `hcoeff`.
+**Important caveat:** `DirichletGRH` remains a *hypothesis* in Lean (not
+imported from the base project's proof); no concrete `K = ℚ(i)` is constructed;
+and `hcoeff` identifies `ζ·L(χ₄)` with `ζ_K` but contributes nothing to the
+nonvanishing (which follows entirely from the GRH hypothesis applied to the
+two factors). See `quadraticDatum_holomorphic` for the holomorphy verification.
 
 - **`gammaFactor_ne_zero_of_re_pos`** — Dirichlet gamma-factors are zero-free
   on the right half-plane.
@@ -137,7 +141,9 @@ input** is the two-squares coefficient identity `hcoeff`.
   level: the "Siegel zeros" responsible for a century of ineffective constants
   (Landau–Siegel) cannot exist once the zeros are pinned on the line.
 - **`LFunction_one_ne_zero`** — Dirichlet's nonvanishing `L(χ, 1) ≠ 0` for
-  non-principal `χ`, as a corollary of the proven GRH shape.
+  non-principal `χ` (a classical result of Dirichlet, 1837; here derived
+  from the GRH statement shape — the parent project proves this shape, but
+  the result itself predates GRH by more than a century).
 
 ### 9. The ℚ(i) / two-squares rung (the abelian gate, reduced)
 
@@ -150,9 +156,9 @@ input** is the two-squares coefficient identity `hcoeff`.
   convergence half-plane (via Mathlib's `LSeries_convolution`). For
   `K = ℚ(i)`, `ψ = χ₄`, the coefficient identity is the classical
   two-squares count — the **unique remaining arithmetic input** of that rung (the root number input is now proven, see §7).
-- **`dedekindERH_quadratic_of_twoSquares`** — the rung assembled: given the
-  strip-level equality `ζ_K = ζ · L(χ₄)` (coefficient identity + identity
-  theorem), the proven Dirichlet GRH yields the full `DedekindERH` for `K`.
+- **`dedekindERH_quadratic_of_twoSquares`** — superseded by the quadratic
+  datum construction (§7), which builds the continuation as the product
+  `ζ·L(χ₄)` directly (no identity-theorem step needed).
 
 ### 10. The Hecke and Artin rungs (interfaces and the Brauer reduction)
 
@@ -163,8 +169,8 @@ input** is the two-squares coefficient identity `hcoeff`.
   L-function with Brauer decomposition data (finite product of Hecke-type
   factors with integer exponents, as supplied by Brauer induction) is
   nonvanishing right of the critical line as soon as its factors are.
-  Together with the mirror adapter this is the complete logical bridge
-  **"Hecke ERH + Brauer induction ⟹ Artin ERH"**; what remains is the
+  Together with the mirror adapter this reduces Artin ERH to Hecke ERH
+  + Brauer induction (**hypothesis-shuffling**, not a proof); what remains is the
   analytic supply (Hecke L-theory; Brauer induction; the first concrete
   factorization `ζ_ℚ(i) = ζ·L(χ₄)`).
 

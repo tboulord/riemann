@@ -775,6 +775,32 @@ theorem dedekindERH_quadratic_i_assembled (hgrh : DirichletGRH)
 
 #print axioms dedekindERH_quadratic_i_assembled
 
+/-- **Holomorphy of the quadratic datum's continuation.** The function
+`riemannZeta · L(χ₄)` is holomorphic away from `s = 1` (product of two
+holomorphic functions, each holomorphic except at their respective poles;
+`L(χ₄, ·)` is entire since `χ₄ ≠ 1`). This closes the holomorphy gap:
+the datum's `ζ` is a *bona fide* analytic function, not just any function
+agreeing with the L-series. -/
+theorem quadraticDatum_holomorphic {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
+    {K : Type*} [Field K] [NumberField K]
+    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
+    (hquad : ψ * ψ = 1) (hroot : DirichletCharacter.rootNumber ψ ≠ 0)
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n) :
+    DifferentiableOn ℂ
+      (quadraticDatum hN1 ψ hprim hquad hroot hcoeff).ζ {s : ℂ | s ≠ 1} := by
+  intro s hs
+  have h1 : DifferentiableAt ℂ riemannZeta s := differentiableAt_riemannZeta hs
+  have h2 : DifferentiableAt ℂ (DirichletCharacter.LFunction ψ) s := by
+    apply DirichletCharacter.differentiableAt_LFunction
+    -- χ ≠ 1 for a quadratic primitive character with N ≠ 1
+    left
+    exact hs
+  exact (h1.mul h2).differentiableWithinAt
+
+#print axioms quadraticDatum_holomorphic
+
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
 /-- The ring of integers of `ℚ`, as a `ℤ`-algebra equivalence with `ℤ`. -/
