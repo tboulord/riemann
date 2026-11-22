@@ -59,3 +59,10 @@ globs = ["Supplements.+"]
 [[lean_lib]]
 name = "Main"
 roots = ["Statements", "Main"]
+
+# Follow-up research (not part of the base proof). `HorizonERH` needs only Mathlib and
+# `Statements`; `Bridge` imports `Main` and therefore needs a full build of the base tree.
+[[lean_lib]]
+name = "ExtendedResearch"
+srcDir = "../extended-research"
+roots = ["HorizonERH", "Bridge"]

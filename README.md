@@ -11,7 +11,7 @@ This repository contains two layers:
 
 Everything in `extended-research/` is verified by the manual GitHub Actions
 pipeline `.github/workflows/lean-manual.yml`; it also compiles locally with
-`lake exe cache get && lake env lean extended-research/HorizonERH.lean`
+`lake exe cache get && lake build Statements && lake env lean extended-research/HorizonERH.lean`
 (about one minute once the Mathlib cache is present).
 
 ---
@@ -130,10 +130,15 @@ Dirichlet L-functions; what is new here is the formal proof, not the mathematics
   *is* the product (strip identity by construction — no identity-theorem
   step), the anchor field is fed by the coefficient identity, the FE and
   gamma factor are fully verified.
-- **`dedekindERH_quadratic_modulo_twoSquares`** — the rung closed: given the
-  two-squares coefficient identity and (for general `ψ`) the nonvanishing of the
-  root number — proven for `χ₄` in §6, classical for all quadratic `ψ` —
-  the proven Dirichlet GRH yields full `DedekindERH K` (e.g. `K = ℚ(i)`).
+- **`dedekindERH_quadratic_modulo_twoSquares`** — the rung: given the
+  coefficient identity and a nonzero root number, `DirichletGRH` (hypothesis)
+  yields `DedekindERH K` for the quadratic datum.
+- **`gaussSum_stdAddChar_ne_zero_of_isPrimitive`**,
+  **`rootNumber_ne_zero_of_isPrimitive`** — the Gauss sum and the root number of
+  *every* primitive Dirichlet character are nonzero (orthogonality argument), so
+  the `hroot` input is discharged in general; **`dedekindERH_quadratic`** — for
+  any `K` with the ideal counts `∑_{d ∣ n} ψ(d)` of a primitive quadratic `ψ`,
+  `DirichletGRH` gives `DedekindERH K D` for every datum `D`.
 
 - **`gaussSum_chiFour`** — the classical Gauss sum computation
   (`gaussSum chiFour stdAddChar = 2·i`, only units 1 and 3 contribute).
@@ -161,6 +166,14 @@ Dirichlet L-functions; what is new here is the formal proof, not the mathematics
   every zero of the continued `ζ_ℚ(i)` in the critical strip has `Re s = 1/2`.
   The first number field other than ℚ for which ERH is formally derived here,
   conditionally on the base project's Dirichlet GRH statement.
+- **`dirichletGRH_eq_statement`** (`DirichletGRH = DirichletLNonvanishingRightOfHalf`,
+  by `rfl`, with `src/Statements.lean` imported) — Lean checks that the hypothesis
+  is literally the base project's statement; **`dedekindERH_QI_of_statement`** is
+  the result phrased with that statement.
+- **`extended-research/Bridge.lean`** — the last line,
+  `dedekindERH_QI_of_statement LFunction_ne_zero_of_half_lt_re`, importing `Main`.
+  Not checked by CI: the import closure of `Main` is 175,177 modules (several
+  CPU-days). Once `lake build Main` has been run, `lake build Bridge` checks it.
 
 ### 8. No Siegel zeros
 
@@ -171,9 +184,8 @@ Dirichlet L-functions; what is new here is the formal proof, not the mathematics
   level: the "Siegel zeros" responsible for a century of ineffective constants
   (Landau–Siegel) cannot exist once the zeros are pinned on the line.
 - **`LFunction_one_ne_zero`** — Dirichlet's nonvanishing `L(χ, 1) ≠ 0` for
-  non-principal `χ` (a classical result of Dirichlet, 1837; here derived
-  from the GRH statement shape — the parent project proves this shape, but
-  the result itself predates GRH by more than a century).
+  non-principal `χ`: unconditional (Dirichlet, 1837), taken from Mathlib's
+  `DirichletCharacter.LFunction_apply_one_ne_zero`; it does not need GRH.
 
 ### 9. The ℚ(i) / two-squares rung (the abelian gate, reduced)
 
@@ -210,7 +222,8 @@ Dirichlet L-functions; what is new here is the formal proof, not the mathematics
 Mathlib binary cache per `lake-manifest.json`, elaborates
 `extended-research/HorizonERH.lean` (or any files given as input) with
 `lake env lean`, and **fails** on any compilation error or on `sorryAx`
-appearing in `#print axioms` output. Optional input builds a lake target of
+appearing in `#print axioms` output. Before elaborating, it builds the one base
+module `Statements` (imports only Mathlib). Optional input builds a lake target of
 the base project (building all 175,187 modules takes ~1–2 CPU-weeks and is
 out of reach for CI runners). Run it: *Actions → "Lean build (manual)" →
 Run workflow* (~9 minutes).
@@ -222,7 +235,7 @@ src/                    the base Lean proof (unmodified, 175,187 files)
 lakefile.toml           Lake configuration of the base project
 lean-toolchain          leanprover/lean4:v4.33.1
 lake-manifest.json      pins mathlib @ 0df444a360ea
-extended-research/      HorizonERH.lean + its own README (details, roadmap)
+extended-research/      HorizonERH.lean, Bridge.lean + README (lake lib `ExtendedResearch`)
 .github/workflows/      the manual Lean CI pipeline
 ```
 

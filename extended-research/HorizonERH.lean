@@ -26,6 +26,9 @@ Everything below compiles with `lake env lean HorizonERH.lean`.
 -/
 
 import Mathlib
+-- The base project's statement file (one module, imports only Mathlib): it lets Lean
+-- check that the hypotheses used below are *literally* the base project's statements.
+import Statements
 
 set_option linter.style.haveILetI false
 -- `lake env lean` does not apply the lakefile's `leanOptions`; without this, an unknown
@@ -264,6 +267,13 @@ def DirichletGRH : Prop :=
   ∀ (N : ℕ) [NeZero N] (χ : DirichletCharacter ℂ N) (s : ℂ),
     1 / 2 < s.re → (χ ≠ 1 ∨ s ≠ 1) → DirichletCharacter.LFunction χ s ≠ 0
 
+/-- `DirichletGRH` *is* the base project's statement `DirichletLNonvanishingRightOfHalf`
+(`src/Statements.lean`), checked by Lean (not by eye). The base project proves it as
+`LFunction_ne_zero_of_half_lt_re` in `src/Main.lean`. -/
+theorem dirichletGRH_eq_statement : DirichletGRH = DirichletLNonvanishingRightOfHalf := rfl
+
+#print axioms dirichletGRH_eq_statement
+
 /-- **The abelian rung, concretely plugged**: if `ζ_K` factors as a finite
 product of Dirichlet L-functions on a half-plane (Kronecker-Weber), then the
 parent project's proven Dirichlet GRH immediately yields nonvanishing of
@@ -290,6 +300,13 @@ def DirichletCriticalLine : Prop :=
   ∀ (N : ℕ) [NeZero N] (χ : DirichletCharacter ℂ N) (s : ℂ),
     0 < s.re → s.re < 1 → DirichletCharacter.LFunction χ s = 0 → s.re = 1 / 2
 
+/-- `DirichletCriticalLine` *is* the base project's `DirichletLZerosOnLine`
+(`src/Statements.lean`), proved there as `LFunction_eq_zero_re` (`src/Main.lean`). -/
+theorem dirichletCriticalLine_eq_statement : DirichletCriticalLine = DirichletLZerosOnLine :=
+  rfl
+
+#print axioms dirichletCriticalLine_eq_statement
+
 /-- **No Siegel zeros.** Under the (parent-proven) critical-line statement,
 there is no real `β ∈ (1/2, 1)` with `L(χ, β) = 0` — for any Dirichlet
 character of any level. A "Siegel zero" — a real zero of a real character
@@ -305,14 +322,13 @@ theorem no_siegel_zeros (h : DirichletCriticalLine) {N : ℕ} [NeZero N]
   rw [Complex.ofReal_re] at hline
   linarith
 
-/-- Dirichlet's nonvanishing at the edge, from the parent-proven GRH shape:
-for every non-principal Dirichlet character, `L(χ, 1) ≠ 0`. (This was the
-historical input to Dirichlet's theorem on primes in arithmetic progressions;
-here it is a corollary of the proven GRH.) -/
-theorem LFunction_one_ne_zero (hgrh : DirichletGRH) {N : ℕ} [NeZero N]
+/-- Dirichlet's nonvanishing at the edge: for every non-principal Dirichlet character,
+`L(χ, 1) ≠ 0`. This is **unconditional** (Dirichlet, 1837; Mathlib's
+`DirichletCharacter.LFunction_apply_one_ne_zero`): it does not need GRH. -/
+theorem LFunction_one_ne_zero {N : ℕ} [NeZero N]
     {χ : DirichletCharacter ℂ N} (hχ : χ ≠ 1) :
     DirichletCharacter.LFunction χ 1 ≠ 0 :=
-  hgrh N χ 1 (by norm_num) (Or.inl hχ)
+  DirichletCharacter.LFunction_apply_one_ne_zero hχ
 
 #print axioms no_siegel_zeros
 #print axioms LFunction_one_ne_zero
@@ -546,6 +562,70 @@ theorem dedekindERH_quadratic_modulo_twoSquares (hgrh : DirichletGRH)
 
 #print axioms dedekindERH_quadratic_modulo_twoSquares
 #print axioms gammaFactor_ne_zero_of_re_pos
+
+/-! ## Root numbers of primitive characters are nonzero (removes `hroot` in general) -/
+
+/-- The Gauss sum of a primitive Dirichlet character, with the standard additive character,
+is nonzero. For primitive `χ`, `gaussSum χ (e.mulShift a) = χ⁻¹ a * gaussSum χ e`
+(Mathlib's `gaussSum_mulShift_of_isPrimitive`); by orthogonality of additive characters,
+`∑ₐ gaussSum χ (e.mulShift a) * e (-a) = N * χ 1 = N ≠ 0`. -/
+theorem gaussSum_stdAddChar_ne_zero_of_isPrimitive {N : ℕ} [NeZero N]
+    {χ : DirichletCharacter ℂ N} (hχ : χ.IsPrimitive) :
+    gaussSum χ (ZMod.stdAddChar (N := N)) ≠ 0 := by
+  intro h0
+  set e : AddChar (ZMod N) ℂ := ZMod.stdAddChar with he
+  have hprim : e.IsPrimitive := ZMod.isPrimitive_stdAddChar N
+  have hall : ∀ a : ZMod N, gaussSum χ (e.mulShift a) = 0 := fun a => by
+    rw [gaussSum_mulShift_of_isPrimitive e hχ a, h0, mul_zero]
+  have h1 : ∀ a : ZMod N, gaussSum χ (e.mulShift a) * e (-a)
+      = ∑ x : ZMod N, χ x * e (a * (x - 1)) := by
+    intro a
+    rw [gaussSum, Finset.sum_mul]
+    refine Finset.sum_congr rfl (fun x _ => ?_)
+    rw [AddChar.mulShift_apply, mul_assoc, ← AddChar.map_add_eq_mul]
+    congr 2
+    ring
+  have key : ∑ a : ZMod N, gaussSum χ (e.mulShift a) * e (-a) = (N : ℂ) := by
+    simp_rw [h1]
+    rw [Finset.sum_comm]
+    simp_rw [← Finset.mul_sum, AddChar.sum_mulShift _ hprim]
+    rw [Finset.sum_eq_single (1 : ZMod N)]
+    · simp [ZMod.card]
+    · intro x _ hx
+      rw [if_neg (sub_ne_zero.mpr hx)]
+      simp
+    · intro h
+      exact absurd (Finset.mem_univ _) h
+  simp only [hall, zero_mul, Finset.sum_const_zero] at key
+  exact NeZero.ne N (by exact_mod_cast key.symm)
+
+/-- **The root number of every primitive Dirichlet character is nonzero.** -/
+theorem rootNumber_ne_zero_of_isPrimitive {N : ℕ} [NeZero N]
+    {χ : DirichletCharacter ℂ N} (hχ : χ.IsPrimitive) :
+    DirichletCharacter.rootNumber χ ≠ 0 := by
+  rw [DirichletCharacter.rootNumber]
+  refine div_ne_zero (div_ne_zero (gaussSum_stdAddChar_ne_zero_of_isPrimitive hχ) ?_) ?_
+  · exact pow_ne_zero _ Complex.I_ne_zero
+  · exact Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast NeZero.ne N))
+
+/-- **The quadratic ERH rung, with `hroot` discharged.** For any number field `K` whose ideal
+counts are `∑_{d ∣ n} ψ(d)` for a primitive quadratic character `ψ` (level `N ≠ 1`),
+`DirichletGRH` gives `DedekindERH K D` for *every* datum `D` of `K`. -/
+theorem dedekindERH_quadratic (hgrh : DirichletGRH)
+    {K : Type*} [Field K] [NumberField K] {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
+    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
+    (hquad : ψ * ψ = 1)
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n)
+    (D : DedekindZetaDatum K) : DedekindERH K D :=
+  (dedekindERH_iff (quadraticDatum hN1 ψ hprim hquad
+      (rootNumber_ne_zero_of_isPrimitive hprim) hcoeff) D).1
+    (dedekindERH_quadratic_modulo_twoSquares hgrh hN1 ψ hprim hquad _ hcoeff)
+
+#print axioms gaussSum_stdAddChar_ne_zero_of_isPrimitive
+#print axioms rootNumber_ne_zero_of_isPrimitive
+#print axioms dedekindERH_quadratic
 #print axioms quadraticDatum
 
 /-! ## The concrete quadratic character chi_4 (mod 4) -/
@@ -1409,6 +1489,17 @@ theorem dedekindZeta_QI_zeros_on_line (hgrh : DirichletGRH)
 #print axioms dedekindERH_QI
 #print axioms dedekindERH_QI_of_datum
 #print axioms dedekindZeta_QI_zeros_on_line
+
+/-- **The one remaining hypothesis, stated exactly.** ERH for `ℚ(i)` follows from the base
+project's own statement `DirichletLNonvanishingRightOfHalf` (`src/Statements.lean`), which
+`src/Main.lean` proves as `LFunction_ne_zero_of_half_lt_re`. Closing it is the single line
+`dedekindERH_QI_of_statement LFunction_ne_zero_of_half_lt_re` in a file importing `Main`
+(see `extended-research/Bridge.lean`), which needs a full build of the base tree. -/
+theorem dedekindERH_QI_of_statement (h : DirichletLNonvanishingRightOfHalf)
+    (D : DedekindZetaDatum GaussianERH.QI) : DedekindERH GaussianERH.QI D :=
+  dedekindERH_QI_of_datum h D
+
+#print axioms dedekindERH_QI_of_statement
 
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/

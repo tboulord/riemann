@@ -43,6 +43,12 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     (`#{ideals of norm n} = ∑_{d ∣ n} χ₄(d)`), the datum `gaussianDatum`, and
     `dedekindERH_QI_of_datum` / `dedekindZeta_QI_zeros_on_line`: ERH for ℚ(i)
     under the `DirichletGRH` hypothesis.
+  - **The last hypothesis, pinned**: `dirichletGRH_eq_statement` proves by `rfl`
+    that `DirichletGRH` is the base project's `DirichletLNonvanishingRightOfHalf`
+    (`src/Statements.lean` is imported); `Bridge.lean` closes it with
+    `LFunction_ne_zero_of_half_lt_re` from `Main` (needs a full base build, not
+    run in CI). `rootNumber_ne_zero_of_isPrimitive` removes the root-number input
+    for every primitive character (`dedekindERH_quadratic`).
   - `gammaR_ne_zero_of_re_pos`, `completedRiemannZeta_eq_gammaR_mul_riemannZeta`,
     `riemannZetaCriticalLine` — the interface instantiated on Mathlib's *own*
     Riemann zeta (`K = ℚ`): the completed factor `Gammaℝ` is zero-free on the
@@ -103,7 +109,9 @@ Lean toolchain `leanprover/lean4:v4.33.1` installed (elan reads `lean-toolchain`
 
 ```bash
 lake exe cache get                               # fetch pinned deps + Mathlib binary cache
+lake build Statements                            # the base statement file (one module)
 lake env lean extended-research/HorizonERH.lean  # elaborates; prints axiom footprints
+# or: lake build HorizonERH                      # same, through the `ExtendedResearch` lib
 ```
 
 A **manual CI pipeline** is provided at `.github/workflows/lean-manual.yml`
