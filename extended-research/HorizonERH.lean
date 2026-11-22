@@ -405,6 +405,30 @@ is supplied by the coefficient identity (`hcoeff`), and the completed form
 root number `rootNumber ψ` (the non-constant factor `N ^ (s - 1/2)` in
 Dirichlet's functional equation is absorbed by the `N ^ (s²/2)` twist, since
 `(1-s)²/2 + (s - 1/2) = s²/2`). -/
+/-- Functional equation of the twisted product `N ^ (s²/2) · Λ_ζ · Λ_ψ`
+for a primitive *quadratic* character `ψ`: it is symmetric up to the
+*constant* `rootNumber ψ` inverted. The key exponent identity is
+`(1-s)²/2 + (s - 1/2) = s²/2`. -/
+private theorem quadraticTwist_fe {N : ℕ} [NeZero N]
+    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
+    (hquad : ψ * ψ = 1) (hroot : DirichletCharacter.rootNumber ψ ≠ 0) (s : ℂ) :
+    (N : ℂ) ^ (s ^ 2 / 2) * completedRiemannZeta s
+      * DirichletCharacter.completedLFunction ψ s
+      = (DirichletCharacter.rootNumber ψ)⁻¹ *
+        ((N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta (1 - s)
+          * DirichletCharacter.completedLFunction ψ (1 - s)) := by
+  have hNc : ((N:ℂ)) ≠ 0 := by exact_mod_cast (NeZero.ne N)
+  have hd : DirichletCharacter.completedLFunction ψ (1 - s)
+      = (N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
+        * DirichletCharacter.completedLFunction ψ s := by
+    rw [DirichletCharacter.IsPrimitive.completedLFunction_one_sub hprim s]
+    rw [show ψ⁻¹ = ψ from inv_eq_of_mul_eq_one_left hquad]
+  rw [hd, completedRiemannZeta_one_sub s]
+  simp only [mul_assoc, mul_comm, mul_left_comm]
+  rw [inv_mul_cancel₀ hroot, one_mul, ← Complex.cpow_add _ _ hNc]
+  congr 1
+  ring
+
 noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
     {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
     (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
@@ -417,11 +441,11 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
   Λ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * completedRiemannZeta z
     * DirichletCharacter.completedLFunction ψ z
   γ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * (Gammaℝ z * DirichletCharacter.gammaFactor ψ z)
-  ε := DirichletCharacter.rootNumber ψ
+  ε := (DirichletCharacter.rootNumber ψ)⁻¹
   agrees := ⟨2, by norm_num, fun z hz =>
     (dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution ψ hcoeff
       (by simp only [Set.mem_setOf] at hz; linarith)).symm⟩
-  hε := hroot
+  hε := inv_ne_zero hroot
   hγ := fun s hs0 _ => mul_ne_zero
     (Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast (NeZero.ne N))))
     (mul_ne_zero (gammaR_ne_zero_of_re_pos hs0) (gammaFactor_ne_zero_of_re_pos ψ hs0))
@@ -436,28 +460,7 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
       rw [DirichletCharacter.LFunction_eq_completed_div_gammaFactor ψ s (Or.inr hN1)]
       field_simp
     rw [h1, h2]; ring
-  hfe := by
-    intro s _ _
-    have hNc : ((N:ℂ)) ≠ 0 := by exact_mod_cast (NeZero.ne N)
-    have hd : DirichletCharacter.completedLFunction ψ (1 - s)
-        = (N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
-          * DirichletCharacter.completedLFunction ψ s := by
-      rw [DirichletCharacter.IsPrimitive.completedLFunction_one_sub hprim s]
-      rw [show ψ⁻¹ = ψ from inv_eq_of_mul_eq_one_left hquad]
-    have hex : ((1:ℂ) - s) ^ 2 / 2 + (s - 1 / 2) = s ^ 2 / 2 := by ring
-    calc (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta (1 - s)
-          * DirichletCharacter.completedLFunction ψ (1 - s)
-        = (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta s
-          * ((N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
-            * DirichletCharacter.completedLFunction ψ s) := by
-          rw [completedRiemannZeta_one_sub s, hd]
-      _ = DirichletCharacter.rootNumber ψ
-          * ((N : ℂ) ^ (s ^ 2 / 2) * completedRiemannZeta s
-            * DirichletCharacter.completedLFunction ψ s) := by
-          simp only [mul_assoc, mul_comm, mul_left_comm]
-          rw [← Complex.cpow_add _ _ hNc]
-          congr 1
-          ring
+  hfe := fun s _ _ => quadraticTwist_fe ψ hprim hquad hroot s
 
 #print axioms gammaFactor_ne_zero_of_re_pos
 #print axioms quadraticDatum
