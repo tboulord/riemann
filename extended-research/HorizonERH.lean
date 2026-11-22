@@ -425,7 +425,8 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
   hγ := fun s hs0 _ => mul_ne_zero
     (Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast (NeZero.ne N))))
     (mul_ne_zero (gammaR_ne_zero_of_re_pos hs0) (gammaFactor_ne_zero_of_re_pos ψ hs0))
-  hΛζ := fun s hs0 _ => by
+  hΛζ := by
+    intro s hs0 _
     have h1 : completedRiemannZeta s = Gammaℝ s * riemannZeta s :=
       completedRiemannZeta_eq_gammaR_mul_riemannZeta hs0
     have hg : DirichletCharacter.gammaFactor ψ s ≠ 0 :=
@@ -453,7 +454,8 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
           * ((N : ℂ) ^ (s ^ 2 / 2) * completedRiemannZeta s
             * DirichletCharacter.completedLFunction ψ s) := by
           simp only [mul_assoc, mul_comm, mul_left_comm]
-          rw [← Complex.cpow_add _ _ hNc, hex]
+          rw [← Complex.cpow_add _ _ hNc]
+          congr 1
           ring
 
 #print axioms gammaFactor_ne_zero_of_re_pos
