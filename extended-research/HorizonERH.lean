@@ -565,7 +565,7 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       have hvv : ((0 : ℕ) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
     rw [MulChar.mul_apply, h0, mul_zero]
-    exact MulChar.map_nonunit _ (by decide)
+    exact MulChar.map_nonunit (1 : DirichletCharacter ℂ 4) (by decide)
   · have ha1 : a = ((1 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h, Nat.cast_one]
     subst ha1
@@ -574,7 +574,7 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       have hvv : ((1 : ℕ) : ZMod 4).val = 1 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
     rw [MulChar.mul_apply, h1v, mul_one]
-    exact map_one _
+    exact (map_one (1 : DirichletCharacter ℂ 4)).symm
   · have ha2 : a = ((2 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h, Nat.cast_two]
     subst ha2
@@ -583,20 +583,21 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       have hvv : ((2 : ℕ) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
     rw [MulChar.mul_apply, h2v, mul_zero]
-    exact MulChar.map_nonunit _ (by decide)
+    exact MulChar.map_nonunit (1 : DirichletCharacter ℂ 4) (by decide)
   · have ha3 : a = ((3 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h]
     subst ha3
     have hu : IsUnit ((3 : ℕ) : ZMod 4) := by
       rw [ZMod.isUnit_iff_coprime]
       norm_num
-    obtain ⟨u, rfl⟩ := hu
+    obtain ⟨u, hu⟩ := hu
+    have hvu : ((u : ZMod 4) : ZMod 4).val = 3 := by
+      rw [hu, ZMod.val_cast_of_lt (by norm_num)]
+    rw [← hu]
     have hc : chiFour (u : ZMod 4) = -1 := by
       show chiFourFun (u : ZMod 4) = -1
-      have hvv : ((u : ZMod 4) : ZMod 4).val = 3 := by
-        rw [show (u : ZMod 4) = ((3 : ℕ) : ZMod 4) from rfl, ZMod.val_cast_of_lt (by norm_num)]
-      simp only [chiFourFun, hvv]
-    rw [hc, MulChar.mul_apply, MulChar.one_apply_coe]
+      simp only [chiFourFun, hvu]
+    rw [MulChar.mul_apply, hc, MulChar.one_apply_coe]
     ring
 
 /-- Every Dirichlet character of level 1 or 2 takes the value `1` at `3`
