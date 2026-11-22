@@ -517,7 +517,7 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
     (MonoidHom.mk (OneHom.mk chiFourFun (by
         have hv : ((1 : ZMod 4)).val = 1 := ZMod.val_cast_of_lt (by norm_num)
         show chiFourFun (1 : ZMod 4) = 1
-        rw [hv]))
+        simp only [chiFourFun, hv]))
       (fun _ _ => chiFourFun_mul _ _)) (by
     intro a ha
     have hc : ¬ (a : ZMod 4).val.Coprime 4 := by
@@ -538,17 +538,17 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
 @[simp] theorem chiFour_one : chiFour (1 : ZMod 4) = 1 := by
   have hv : ((1 : ZMod 4)).val = 1 := ZMod.val_cast_of_lt (by norm_num)
   show chiFourFun (1 : ZMod 4) = 1
-  rw [hv]
+  simp only [chiFourFun, hv]
 
 @[simp] theorem chiFour_two : chiFour (2 : ZMod 4) = 0 := by
   have hv : ((2 : ZMod 4)).val = 2 := ZMod.val_cast_of_lt (by norm_num)
   show chiFourFun (2 : ZMod 4) = 0
-  rw [hv]
+  simp only [chiFourFun, hv]
 
 @[simp] theorem chiFour_three : chiFour (3 : ZMod 4) = -1 := by
   have hv : ((3 : ZMod 4)).val = 3 := ZMod.val_cast_of_lt (by norm_num)
   show chiFourFun (3 : ZMod 4) = -1
-  rw [hv]
+  simp only [chiFourFun, hv]
 
 /-- chi_4 is quadratic: `chi_4 * chi_4 = 1`. -/
 theorem chiFour_sq : chiFour * chiFour = 1 := by
@@ -557,13 +557,23 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
   have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
   rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 1
     ∨ (a : ZMod 4).val = 2 ∨ (a : ZMod 4).val = 3) with h | h | h | h
-  · have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
+  · have ha0 : a = 0 := by
+      apply ZMod.val_injective
+      rw [ZMod.val_cast_of_lt (by norm_num)]
+      exact h.symm
+    subst ha0
+    have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by decide)
-    simp [chiFour, chiFourFun, h, h1]
+    simp [chiFour, chiFourFun, h1]
   · simp [chiFour, chiFourFun, h]
-  · have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
+  · have ha2 : a = 2 := by
+      apply ZMod.val_injective
+      rw [ZMod.val_cast_of_lt (by norm_num)]
+      exact h.symm
+    subst ha2
+    have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
       MulChar.map_nonunit _ (by decide)
-    simp [chiFour, chiFourFun, h, h1]
+    simp [chiFour, chiFourFun, h1]
   · simp [chiFour, chiFourFun, h]
 
 /-- Every Dirichlet character of level 1 or 2 takes the value `1` at `3`
