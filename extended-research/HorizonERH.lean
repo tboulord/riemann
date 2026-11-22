@@ -551,7 +551,6 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
   simp only [chiFourFun, hv]
 
 /-- chi_4 is quadratic: `chi_4 * chi_4 = 1`. -/
-/-- chi_4 is quadratic: `chi_4 * chi_4 = 1`. -/
 theorem chiFour_sq : chiFour * chiFour = 1 := by
   apply MulChar.ext'
   intro a
@@ -565,7 +564,7 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       show chiFourFun ((0 : ℕ) : ZMod 4) = 0
       have hvv : ((0 : ℕ) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
-    rw [MulChar.mul_apply, h0, h0, mul_zero]
+    rw [MulChar.mul_apply, h0, mul_zero]
     exact MulChar.map_nonunit _ (by decide)
   · have ha1 : a = ((1 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h, Nat.cast_one]
@@ -574,7 +573,7 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       show chiFourFun ((1 : ℕ) : ZMod 4) = 1
       have hvv : ((1 : ℕ) : ZMod 4).val = 1 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
-    rw [MulChar.mul_apply, h1v, h1v, mul_one]
+    rw [MulChar.mul_apply, h1v, mul_one]
     exact map_one _
   · have ha2 : a = ((2 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h, Nat.cast_two]
@@ -583,7 +582,7 @@ theorem chiFour_sq : chiFour * chiFour = 1 := by
       show chiFourFun ((2 : ℕ) : ZMod 4) = 0
       have hvv : ((2 : ℕ) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
       simp only [chiFourFun, hvv]
-    rw [MulChar.mul_apply, h2v, h2v, mul_zero]
+    rw [MulChar.mul_apply, h2v, mul_zero]
     exact MulChar.map_nonunit _ (by decide)
   · have ha3 : a = ((3 : ℕ) : ZMod 4) := by
       rw [← ZMod.natCast_zmod_val a, h]
