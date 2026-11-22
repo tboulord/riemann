@@ -9,8 +9,10 @@ This repository contains two layers:
    proof: machine-checked foundations toward the *Extended* Riemann
    Hypothesis (Hecke/Artin L-functions).
 
-Everything in `extended-research/` is verified **on GitHub Actions only**
-(no local builds), by the manual pipeline `.github/workflows/lean-manual.yml`.
+Everything in `extended-research/` is verified by the manual GitHub Actions
+pipeline `.github/workflows/lean-manual.yml`; it also compiles locally with
+`lake exe cache get && lake env lean extended-research/HorizonERH.lean`
+(about one minute once the Mathlib cache is present).
 
 ---
 
@@ -52,7 +54,13 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
 - **`DedekindZetaDatum K`** — packages the analytic continuation of `ζ_K`,
   its completion, gamma factor and functional equation as data (Mathlib
   defines `NumberField.dedekindZeta` only where the L-series converges).
-- **`DedekindERH`** — the target statement of the ERH extension.
+  The field `holo` requires the continuation to be holomorphic on `ℂ \ {1}`.
+- **`DedekindZetaDatum.ζ_eqOn`** — two data for the same `K` have the same
+  `ζ` on `ℂ \ {1}` (identity theorem on a connected open set, from `holo` and
+  the agreement with the L-series on a right half-plane).
+- **`DedekindERH`** — the target statement of the ERH extension;
+  **`dedekindERH_iff`** shows it does not depend on the chosen datum, so it is
+  a property of the field `K` alone.
 - **`dedekindZetaCriticalLine`** — the adapter instantiated for `ζ_K`.
 
 ### 3. The abelian rung, under the Dirichlet GRH hypothesis
@@ -65,7 +73,9 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   (`Main.lean`: `LFunction_ne_zero_of_half_lt_re := allChi`).
 - **`nonvanishing_of_dirichlet_factorization`** — Kronecker–Weber
   factorization + proven Dirichlet GRH ⟹ `ζ_K` nonzero for `Re s > 1/2`.
-  *What remains: the factorization itself (the coefficient identity, classical but not yet formalized).*
+  *What remains: the factorization itself (the coefficient identity). It is
+  proved for ℚ(i) only (§7b); the generic counting lemmas of §7b plus Mathlib's
+  splitting data for cyclotomic fields are the ingredients for `ℚ(ζₙ)`.*
 
 ### 4. The `ζ_ℚ` glue (new lemma, not previously in Mathlib)
 
@@ -98,16 +108,16 @@ has been printed by `#print axioms` in public CI logs with axiom footprint
   factor through level 1 or 2 because every level-1/2 character takes value
   1 at 3 while χ₄(3) = −1; and the conductor divides 4).
 
-### 7. The quadratic datum — ERH modulo exactly one input
+### 7. The quadratic datum, and ERH for ℚ(i) under the Dirichlet GRH hypothesis
 
-For `ψ = χ₄`, three of the four datum inputs are proven (`chiFour_isPrimitive`,
-`chiFour_sq`, `chiFour_rootNumber_ne_zero` — the Gauss sum evaluates to `2i`).
-The remaining input is the two-squares coefficient identity `hcoeff`.
-**Important caveat:** `DirichletGRH` remains a *hypothesis* in Lean (not
-imported from the base project's proof); no concrete `K = ℚ(i)` is constructed;
+For `ψ = χ₄` all four datum inputs are proven (`chiFour_isPrimitive`,
+`chiFour_sq`, `chiFour_rootNumber_ne_zero` — the Gauss sum evaluates to `2i` —
+and the coefficient identity `hcoeff_QI`, §7b). **Caveats:** `DirichletGRH`
+remains a *hypothesis* in Lean (not imported from the base project's proof);
 and `hcoeff` identifies `ζ·L(χ₄)` with `ζ_K` but contributes nothing to the
-nonvanishing (which follows entirely from the GRH hypothesis applied to the
-two factors). See `quadraticDatum_holomorphic` for the holomorphy verification.
+nonvanishing, which follows entirely from the GRH hypothesis applied to the two
+factors — classically, ERH for ℚ(i) is an immediate consequence of GRH for
+Dirichlet L-functions; what is new here is the formal proof, not the mathematics.
 
 - **`gammaFactor_ne_zero_of_re_pos`** — Dirichlet gamma-factors are zero-free
   on the right half-plane.
@@ -128,9 +138,29 @@ two factors). See `quadraticDatum_holomorphic` for the holomorphy verification.
 - **`gaussSum_chiFour`** — the classical Gauss sum computation
   (`gaussSum chiFour stdAddChar = 2·i`, only units 1 and 3 contribute).
 - **`chiFour_rootNumber_ne_zero`** — the root number of `χ₄` is nonzero.
-- **`dedekindERH_quadratic_i_assembled`** — the assembly: given only the
-  two-squares identity `hcoeff`, the proven Dirichlet GRH yields the full
-  `DedekindERH K` through the quadratic datum at `χ₄`.
+- **`dedekindERH_quadratic_i_assembled`** — the assembly for any `K` with the
+  ideal counts of ℚ(i): `DirichletGRH` (hypothesis) yields `DedekindERH K`
+  through the quadratic datum at `χ₄`.
+
+### 7b. ℚ(i) concretely: ideal counts, datum, ERH
+
+- **Generic ideal counting** (any number field `K`, `idealCount K n` = number
+  of ideals of norm `n`): `GaussianERH.idealCount_mul` (multiplicative in
+  coprime arguments), `idealCount_prime_pow_of_unique` (one prime above `p`, of
+  inertia degree `f`: one ideal of norm `p^k` if `f ∣ k`, none otherwise),
+  `idealCount_prime_pow_of_split` (two primes of degree 1: `k + 1` ideals).
+- **Splitting in ℚ(i) = `CyclotomicField 4 ℚ`** from Mathlib's cyclotomic
+  ramification theory: `QI_two` (2 ramified), `QI_one_mod_four` (split),
+  `QI_three_mod_four` (inert).
+- **`hcoeff_QI`** — `#{ideals of norm n} = ∑_{d ∣ n} χ₄(d)`, proved on ideals
+  by multiplicativity (no two-squares/Jacobi formula needed).
+- **`gaussianDatum`** — the `DedekindZetaDatum` of ℚ(i) with every input
+  proved (continuation `ζ·L(χ₄)`, functional equation, holomorphy, anchoring).
+- **`dedekindERH_QI_of_datum`** / **`dedekindZeta_QI_zeros_on_line`** — under
+  `DirichletGRH`, ERH holds for ℚ(i) for *every* datum (`dedekindERH_iff`), and
+  every zero of the continued `ζ_ℚ(i)` in the critical strip has `Re s = 1/2`.
+  The first number field other than ℚ for which ERH is formally derived here,
+  conditionally on the base project's Dirichlet GRH statement.
 
 ### 8. No Siegel zeros
 
@@ -154,8 +184,7 @@ two factors). See `quadraticDatum_holomorphic` for the holomorphy verification.
   coefficient identity ⟹ L-series factorization: if the ideal counts of `K`
   equal the Dirichlet convolution `1 ⍟ ψ`, then `ζ_K = ζ · L(ψ)` on the
   convergence half-plane (via Mathlib's `LSeries_convolution`). For
-  `K = ℚ(i)`, `ψ = χ₄`, the coefficient identity is the classical
-  two-squares count — the **unique remaining arithmetic input** of that rung (the root number input is now proven, see §7).
+  `K = ℚ(i)`, `ψ = χ₄`, the coefficient identity is now proved (`hcoeff_QI`, §7b).
 - **`dedekindERH_quadratic_of_twoSquares`** — superseded by the quadratic
   datum construction (§7), which builds the continuation as the product
   `ζ·L(χ₄)` directly (no identity-theorem step needed).
@@ -171,8 +200,8 @@ two factors). See `quadraticDatum_holomorphic` for the holomorphy verification.
   nonvanishing right of the critical line as soon as its factors are.
   Together with the mirror adapter this reduces Artin ERH to Hecke ERH
   + Brauer induction (**hypothesis-shuffling**, not a proof); what remains is the
-  analytic supply (Hecke L-theory; Brauer induction; the first concrete
-  factorization `ζ_ℚ(i) = ζ·L(χ₄)`).
+  analytic supply (Hecke L-theory; Brauer induction). The first concrete
+  factorization `ζ_ℚ(i) = ζ·L(χ₄)` is now proved (§7b).
 
 ## The verification pipeline
 

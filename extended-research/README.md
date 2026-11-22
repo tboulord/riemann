@@ -26,12 +26,23 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
   - `DedekindZetaDatum K` — interface packaging the meromorphic continuation of
     `ζ_K`, its completed form, gamma factor and functional equation as data
     (Mathlib defines `NumberField.dedekindZeta` only where the L-series converges).
+    The field `holo` (holomorphy on `ℂ \ {1}`) makes the continuation unique:
+    `DedekindZetaDatum.ζ_eqOn`, hence `dedekindERH_iff` — `DedekindERH K D` does
+    not depend on `D`.
   - `DedekindERH` — the target statement of the ERH extension for `ζ_K`.
   - `dedekindZetaCriticalLine` — instantiation of the adapter for `ζ_K`.
   - `nonvanishing_right_of_product` / `abelianDedekindERH` — the abelian-case
     reduction: given a factorization of `ζ_K` into finitely many Dirichlet
-    L-functions (Kronecker–Weber), GRH-Dirichlet — already proved in the parent
-    project — immediately yields ERH for `K`.
+    L-functions (Kronecker–Weber), the `DirichletGRH` hypothesis (the shape the
+    parent project proves; not imported) yields ERH for `K`.
+  - **ℚ(i) concretely** (`GaussianERH` namespace and what follows it): generic
+    ideal counting for any number field (`idealCount_mul`,
+    `idealCount_prime_pow_of_unique`, `idealCount_prime_pow_of_split`), splitting
+    of primes in `CyclotomicField 4 ℚ` (`QI_two`, `QI_one_mod_four`,
+    `QI_three_mod_four`), the identity `hcoeff_QI`
+    (`#{ideals of norm n} = ∑_{d ∣ n} χ₄(d)`), the datum `gaussianDatum`, and
+    `dedekindERH_QI_of_datum` / `dedekindZeta_QI_zeros_on_line`: ERH for ℚ(i)
+    under the `DirichletGRH` hypothesis.
   - `gammaR_ne_zero_of_re_pos`, `completedRiemannZeta_eq_gammaR_mul_riemannZeta`,
     `riemannZetaCriticalLine` — the interface instantiated on Mathlib's *own*
     Riemann zeta (`K = ℚ`): the completed factor `Gammaℝ` is zero-free on the
@@ -63,8 +74,9 @@ theta-lift "manufactured multiplicity" engine beyond the Dirichlet family.
     decomposition data (finite product of Hecke-type factors with integer
     exponents, as supplied by Brauer induction over cyclic subgroups) is
     nonvanishing right of the critical line as soon as its factors are.
-    Together with `dedekindERH_of_heckeERH` and the mirror adapter this is
-    the complete logical bridge **"Hecke ERH + Brauer ⟹ Artin ERH"**.
+    Together with `dedekindERH_of_heckeERH` and the mirror adapter this states
+    the classical reduction "Hecke ERH + Brauer ⟹ Artin ERH" with both inputs as
+    hypotheses (a one-line product argument, not a proof of either input).
   - **The `ζ_ℚ` glue (new lemma, not previously in Mathlib)**:
     `card_ideal_rat_absNorm` — exactly one ideal of `𝓞 ℚ` per absolute norm,
     via `Rat.ringOfIntegersEquiv`, `Algebra.norm_eq_of_algEquiv`, and the PID
@@ -113,8 +125,11 @@ also be given an optional lake build target (e.g. `Statements`). Building all
    (`riemannHypothesis_iff_dedekindERH_rat`).
 2. **Abelian case end-to-end**: formalize Kronecker–Weber + the conductor
    factorization `ζ_K = ∏ L(χ)`; then `abelianDedekindERH` closes ERH for all
-   abelian `K` from the parent project's GRH. Cyclotomic ingredients already
-   exist in the parent archive (`ReciprocityTheory/Chebotarev/`).
+   abelian `K` from the parent project's GRH. **Done for ℚ(i)** (`hcoeff_QI`,
+   `dedekindERH_QI_of_datum`). Next natural step: `ℚ(ζₙ)`, from the generic
+   counting lemmas and Mathlib's cyclotomic splitting data
+   (`IsCyclotomicExtension.Rat.inertiaDegIn_eq`, `ramificationIdxIn_eq`), plus a
+   datum for a product of several Dirichlet L-functions.
 3. **Hecke characters and Hecke L-functions** (the *interfaces* are done:
    `ERHFamily`, `dedekindERH_of_heckeERH`, `nonvanishing_of_artin_brauer`;
    what remains is the analytic construction) (idele-class characters, algebraic
@@ -123,7 +138,14 @@ also be given an optional lake build target (e.g. `Statements`). Building all
 4. **The engine extension**: run the parent project's theta-lift chains
    (`ThetaCorrespondence/`, `ThetaParseval/`) over the idele class group of a
    number field. This is the open research step the author flagged as
-   "expected with more time".
+   "expected with more time". A read-only survey of `src/` (2026-11-22, not
+   compiled, conclusions inferred) suggests: the mirror step is the classical
+   functional-equation argument; the nonvanishing core (a Landau-type positivity
+   argument over a finite cyclic group of Dirichlet characters, fed by CM "host"
+   fields over ℚ) is hard-wired to ℚ; one host component requires
+   `discr K < -4`, which excludes ℚ(i). Porting the core to ray-class characters
+   of ℚ(i) looks like a large effort (order 10⁴–10⁵ lines, very uncertain), and
+   Grössencharaktere of infinite type would need new mathematics, not a port.
 5. **Artin L-functions**: Brauer induction (a `GroundTheory/Brauer` tower exists
    in the parent archive) + Artin formalism reduce the Artin case to the Hecke
    case. Consequences: Artin's primitive root conjecture (Hooley), effective

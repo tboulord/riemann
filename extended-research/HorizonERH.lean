@@ -28,6 +28,9 @@ Everything below compiles with `lake env lean HorizonERH.lean`.
 import Mathlib
 
 set_option linter.style.haveILetI false
+-- `lake env lean` does not apply the lakefile's `leanOptions`; without this, an unknown
+-- identifier in a statement is silently auto-bound as an extra hypothesis.
+set_option autoImplicit false
 
 open Complex NumberField
 
@@ -104,6 +107,11 @@ structure DedekindZetaDatum where
   hΛζ : ∀ s : ℂ, 0 < s.re → s.re < 1 → Λ s = γ s * ζ s
   /-- Functional equation of the completed zeta. -/
   hfe : ∀ s : ℂ, Λ s = ε * Λ (1 - s)
+  /-- The continuation is holomorphic away from the pole `s = 1`. Together with
+  `agrees`, this pins `ζ` down uniquely (identity theorem, see
+  `DedekindZetaDatum.ζ_eqOn`): `ζ` is *the* meromorphic continuation of `ζ_K`,
+  not an arbitrary function agreeing with the L-series. -/
+  holo : DifferentiableOn ℂ ζ {s : ℂ | s ≠ 1}
 
 /-- The ERH statement for ζ_K, relative to a continuation datum:
 every zero with `Re(s) > 1/2` is the pole `s = 1`. -/
@@ -120,6 +128,55 @@ theorem dedekindZetaCriticalLine (D : DedekindZetaDatum K)
   mirror_lemma D.hε D.hγ D.hΛζ D.hfe
     (fun s hs0 hs1 =>
       hz s hs0 (fun hs => by rw [hs, Complex.one_re] at hs1; norm_num at hs1))
+
+/-- **Uniqueness of the continuation.** Two data for the same number field have
+the same `ζ` away from `s = 1`: both are holomorphic on the connected open set
+`ℂ \ {1}` and agree with Mathlib's L-series on a right half-plane, so the identity
+theorem forces them to coincide. -/
+theorem DedekindZetaDatum.ζ_eqOn {K : Type*} [Field K] [NumberField K]
+    (D₁ D₂ : DedekindZetaDatum K) : Set.EqOn D₁.ζ D₂.ζ {s : ℂ | s ≠ 1} := by
+  obtain ⟨b₁, hb₁, h₁⟩ := D₁.agrees
+  obtain ⟨b₂, hb₂, h₂⟩ := D₂.agrees
+  have hU : IsOpen {s : ℂ | s ≠ 1} := isOpen_ne
+  have hconn : IsPreconnected {s : ℂ | s ≠ 1} := by
+    have h := (isConnected_compl_singleton_of_one_lt_rank
+      (by rw [Complex.rank_real_complex]; norm_num) (1 : ℂ)).isPreconnected
+    rwa [Set.compl_singleton_eq] at h
+  let z₀ : ℂ := ((max b₁ b₂ + 1 : ℝ) : ℂ)
+  have hz₀re : z₀.re = max b₁ b₂ + 1 := Complex.ofReal_re _
+  have hz₀ : z₀ ∈ {s : ℂ | s ≠ 1} := by
+    intro h
+    have h' := congrArg Complex.re h
+    rw [hz₀re, Complex.one_re] at h'
+    have := le_max_left b₁ b₂
+    linarith
+  have hev : D₁.ζ =ᶠ[nhds z₀] D₂.ζ := by
+    have hopen : IsOpen {s : ℂ | max b₁ b₂ < s.re} :=
+      isOpen_lt continuous_const Complex.continuous_re
+    have hmem : z₀ ∈ {s : ℂ | max b₁ b₂ < s.re} := by
+      show max b₁ b₂ < z₀.re
+      rw [hz₀re]; linarith
+    filter_upwards [hopen.mem_nhds hmem] with s hs
+    have hs₁ : b₁ < s.re := lt_of_le_of_lt (le_max_left _ _) hs
+    have hs₂ : b₂ < s.re := lt_of_le_of_lt (le_max_right _ _) hs
+    rw [h₁ hs₁, h₂ hs₂]
+  exact (D₁.holo.analyticOnNhd hU).eqOn_of_preconnected_of_eventuallyEq
+    (D₂.holo.analyticOnNhd hU) hconn hz₀ hev
+
+/-- Consequently `DedekindERH K D` does not depend on the datum `D`: it is a
+property of the number field `K` alone. -/
+theorem dedekindERH_iff {K : Type*} [Field K] [NumberField K]
+    (D₁ D₂ : DedekindZetaDatum K) : DedekindERH K D₁ ↔ DedekindERH K D₂ := by
+  constructor
+  · intro h s hs hs1
+    rw [← D₁.ζ_eqOn D₂ hs1]
+    exact h s hs hs1
+  · intro h s hs hs1
+    rw [D₁.ζ_eqOn D₂ hs1]
+    exact h s hs hs1
+
+#print axioms DedekindZetaDatum.ζ_eqOn
+#print axioms dedekindERH_iff
 
 /-! ## The abelian case: reduction to Dirichlet GRH (Kronecker-Weber) -/
 
@@ -419,7 +476,7 @@ private theorem quadraticTwist_fe {N : ℕ} [NeZero N]
   simp only [mul_assoc, mul_comm, mul_left_comm]
   rw [← mul_assoc ψ.rootNumber ψ.rootNumber⁻¹ _, mul_inv_cancel₀ hroot, one_mul, ← hpow]
   congr 1
-  ring
+  ring_nf
 
 /-- **The quadratic Dedekind-zeta datum.** For a number field `K` whose
 Dedekind zeta factors as `ζ · L(ψ)` with `ψ` a primitive quadratic character
@@ -463,6 +520,8 @@ noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
       field_simp
     rw [h1, h2]; ring
   hfe := fun s => quadraticTwist_fe ψ hprim hquad hroot s
+  holo := fun s hs => ((differentiableAt_riemannZeta hs).mul
+    (DirichletCharacter.differentiableAt_LFunction ψ s (Or.inl hs))).differentiableWithinAt
 
 /-- **The quadratic ERH rung, closed modulo exactly two classical inputs.**
 Given the two-squares coefficient identity (`hcoeff`) and the classical
@@ -711,26 +770,6 @@ theorem chiFour_agrees_ZMod_chiFour (a : ZMod 4) :
 
 #print axioms chiFour_agrees_ZMod_chiFour
 
-/-! ## Structural verification for the two-squares counting (hcoeff) -/
-
-/-- The Gaussian integers form a Euclidean domain (hence a PID, hence a UFD,
-hence integrally closed). All three instances are available by
-`infer_instance` in Mathlib at the pinned revision. -/
-example : EuclideanDomain (Zsqrtd (-1)) := by infer_instance
-
-example : IsPrincipalIdealRing (Zsqrtd (-1)) := by infer_instance
-
-example : IsIntegrallyClosed (Zsqrtd (-1)) := by infer_instance
-
--- The norm of a unit in Z[i] is ±1 (from multiplicativity); combined with
--- nonnegativity this forces +1. The formal proof requires the Zsqrtd.norm
--- API to be more developed than at the pinned revision; the key structural
--- instances (PID, integrally closed) are verified above.
--- TODO: formalize `zsqrtNegOne_unit_norm` (blocked on Zsqrtd.norm API)
--- TODO: connect Ideal.absNorm to Zsqrtd.norm for GaussianInt
--- TODO: the two-squares counting formula (Jacobi)
--- These three TODOs together constitute the full hcoeff input.
-
 /-! ## The Gauss sum of chi_4 and the nonvanishing of its root number -/
 
 private theorem stdAddChar_one : ZMod.stdAddChar (1 : ZMod 4) = I := by
@@ -820,19 +859,23 @@ theorem chiFour_rootNumber_ne_zero : DirichletCharacter.rootNumber chiFour ≠ 0
 #print axioms gaussSum_chiFour
 #print axioms chiFour_rootNumber_ne_zero
 
-/-- **ERH for ℚ(i), assembled.** For any number field `K` whose ideal counts
-satisfy the two-squares identity with `chi_4` (the unique remaining input),
-the proven Dirichlet GRH yields the full `DedekindERH K` through the
-quadratic datum instantiated at `chi_4` (primitive, quadratic, nonzero root
-number). -/
+/-- The level `4` is not `1`. (Previously written as an unbound `four_ne_one`, which
+`autoImplicit` silently turned into an extra implicit hypothesis `4 ≠ 1`.) -/
+theorem four_ne_one_nat : (4 : ℕ) ≠ 1 := by norm_num
+
+/-- **ERH for any `K` with the ideal counts of ℚ(i), assembled.** For any number field
+`K` whose ideal counts satisfy the identity `#{I : N I = n} = ∑_{d ∣ n} χ₄(d)`,
+`DirichletGRH` (a hypothesis) yields `DedekindERH K` through the quadratic datum
+instantiated at `chi_4` (primitive, quadratic, nonzero root number). The identity is
+proved for `ℚ(i) = CyclotomicField 4 ℚ` below (`hcoeff_QI`). -/
 theorem dedekindERH_quadratic_i_assembled (hgrh : DirichletGRH)
     {K : Type*} [Field K] [NumberField K]
     (hcoeff : ∀ n : ℕ, n ≠ 0 →
       (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
         = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => chiFour n)) n) :
-    DedekindERH K (quadraticDatum (N := 4) four_ne_one chiFour
+    DedekindERH K (quadraticDatum (N := 4) four_ne_one_nat chiFour
       chiFour_isPrimitive chiFour_sq chiFour_rootNumber_ne_zero hcoeff) :=
-  dedekindERH_quadratic_modulo_twoSquares hgrh four_ne_one chiFour
+  dedekindERH_quadratic_modulo_twoSquares hgrh four_ne_one_nat chiFour
     chiFour_isPrimitive chiFour_sq chiFour_rootNumber_ne_zero hcoeff
 
 #print axioms dedekindERH_quadratic_i_assembled
@@ -851,17 +894,522 @@ theorem quadraticDatum_holomorphic {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
       (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
         = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n) :
     DifferentiableOn ℂ
-      (quadraticDatum hN1 ψ hprim hquad hroot hcoeff).ζ {s : ℂ | s ≠ 1} := by
-  intro s hs
-  have h1 : DifferentiableAt ℂ riemannZeta s := differentiableAt_riemannZeta hs
-  have h2 : DifferentiableAt ℂ (DirichletCharacter.LFunction ψ) s := by
-    apply DirichletCharacter.differentiableAt_LFunction
-    -- χ ≠ 1 for a quadratic primitive character with N ≠ 1
-    left
-    exact hs
-  exact (h1.mul h2).differentiableWithinAt
+      (quadraticDatum hN1 ψ hprim hquad hroot hcoeff).ζ {s : ℂ | s ≠ 1} :=
+  -- now a field of every `DedekindZetaDatum` (proved in `quadraticDatum` from
+  -- `differentiableAt_riemannZeta` and `DirichletCharacter.differentiableAt_LFunction`)
+  (quadraticDatum hN1 ψ hprim hquad hroot hcoeff).holo
 
 #print axioms quadraticDatum_holomorphic
+
+/-! ## Counting ideals by norm, and `ℚ(i)` concretely (`hcoeff` proved)
+
+Generic facts for any number field `K` (`idealCount K n` = number of ideals of norm `n`):
+multiplicativity in coprime arguments, and the count at `p ^ k` from the primes above
+`p` (one prime of inertia degree `f`, or two of degree `1`). Then `ℚ(i)` as
+`CyclotomicField 4 ℚ`: splitting of `2`, `p ≡ 1`, `p ≡ 3 (mod 4)` from Mathlib's
+cyclotomic ramification theory, and `#{I : N I = n} = ∑_{d ∣ n} χ₄(d)`. No two-squares
+(Jacobi) formula is needed: the count is done on ideals, not on elements. -/
+
+namespace GaussianERH
+
+section W1
+
+/-- Number of ideals of `𝓞 K` of absolute norm `n`. -/
+noncomputable def idealCount (K : Type*) [Field K] [NumberField K] (n : ℕ) : ℕ :=
+  Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n}
+
+theorem idealCount_one (K : Type*) [Field K] [NumberField K] : idealCount K 1 = 1 := by
+  simp [idealCount]
+
+/-- If `A ⊔ B = ⊤`, `A ≤ J` and `B ≤ J'`, then `J * J' ⊔ A = J`. -/
+theorem w1_mul_sup_eq {R : Type*} [CommRing R] {A B J J' : Ideal R} (hAB : A ⊔ B = ⊤)
+    (hA : A ≤ J) (hB : B ≤ J') : J * J' ⊔ A = J := by
+  have h : A ⊔ J' = ⊤ := eq_top_iff.mpr (hAB ▸ sup_le_sup_left hB A)
+  rw [sup_comm, mul_comm, Ideal.sup_mul_eq_of_coprime_left h, sup_eq_right.mpr hA]
+
+/-- If `A ⊔ B = ⊤` and `A * B ≤ I`, then `(I ⊔ A) * (I ⊔ B) = I`. -/
+theorem w1_sup_mul_sup_eq {R : Type*} [CommRing R] {A B I : Ideal R} (hAB : A ⊔ B = ⊤)
+    (h : A * B ≤ I) : (I ⊔ A) * (I ⊔ B) = I := by
+  apply le_antisymm
+  · rw [Ideal.sup_mul, Ideal.mul_sup, Ideal.mul_sup]
+    exact sup_le (sup_le Ideal.mul_le_left Ideal.mul_le_left) (sup_le Ideal.mul_le_right h)
+  · have hc : (I ⊔ A) ⊔ (I ⊔ B) = ⊤ :=
+      eq_top_iff.mpr (hAB ▸ sup_le_sup le_sup_right le_sup_right)
+    rw [Ideal.mul_eq_inf_of_coprime hc]
+    exact le_inf le_sup_left le_sup_left
+
+/-- Arithmetic: divisors `a ∣ m ^ d`, `b ∣ n ^ d` of coprime `m, n` with `a * b = m * n`. -/
+theorem w1_norms {a b m n d : ℕ} (hm : m ≠ 0) (hn : n ≠ 0) (hmn : m.Coprime n)
+    (ha : a ∣ m ^ d) (hb : b ∣ n ^ d) (hab : a * b = m * n) : a = m ∧ b = n := by
+  have ha' : a ∣ m :=
+    (Nat.Coprime.coprime_dvd_left ha (hmn.pow_left d)).dvd_of_dvd_mul_right
+      (hab ▸ dvd_mul_right a b)
+  have hb' : b ∣ n :=
+    (Nat.Coprime.coprime_dvd_left hb (hmn.symm.pow_left d)).dvd_of_dvd_mul_left
+      (hab ▸ dvd_mul_left b a)
+  obtain ⟨k, rfl⟩ := ha'
+  obtain ⟨l, rfl⟩ := hb'
+  have hpos : 0 < a * b := by
+    rcases Nat.eq_zero_or_pos (a * b) with h | h
+    · rw [h] at hab
+      exact absurd hab.symm (mul_ne_zero hm hn)
+    · exact h
+  have h1 : a * b * (k * l) = a * b * 1 :=
+    calc a * b * (k * l) = a * k * (b * l) := by ring
+      _ = a * b * 1 := by rw [mul_one, hab]
+  have h2 := mul_eq_one.mp (Nat.eq_of_mul_eq_mul_left hpos h1)
+  simp [h2.1, h2.2]
+
+/-- The number of ideals of norm `m * n` is multiplicative in coprime `m, n`. -/
+theorem idealCount_mul (K : Type*) [Field K] [NumberField K] {m n : ℕ}
+    (hm : m ≠ 0) (hn : n ≠ 0) (hmn : m.Coprime n) :
+    idealCount K (m * n) = idealCount K m * idealCount K n := by
+  set A : Ideal (𝓞 K) := Ideal.span {(m : 𝓞 K)} with hAdef
+  set B : Ideal (𝓞 K) := Ideal.span {(n : 𝓞 K)} with hBdef
+  have hAB : A ⊔ B = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp ((Ideal.isCoprime_span_singleton_iff _ _).mpr hmn.cast)
+  have hBA : B ⊔ A = ⊤ := by rw [sup_comm]; exact hAB
+  have hAn : Ideal.absNorm A = m ^ Module.finrank ℤ (𝓞 K) := Ideal.absNorm_span_natCast m
+  have hBn : Ideal.absNorm B = n ^ Module.finrank ℤ (𝓞 K) := Ideal.absNorm_span_natCast n
+  have hle : ∀ (J : Ideal (𝓞 K)) (k : ℕ), Ideal.absNorm J = k →
+      Ideal.span {(k : 𝓞 K)} ≤ J := by
+    intro J k hJ
+    have := Ideal.span_singleton_absNorm_le J
+    rwa [hJ] at this
+  have hABI : ∀ I : Ideal (𝓞 K), Ideal.absNorm I = m * n → A * B ≤ I := by
+    intro I hI
+    rw [hAdef, hBdef, Ideal.span_singleton_mul_span_singleton, ← Nat.cast_mul]
+    exact hle I _ hI
+  have key : ∀ I : Ideal (𝓞 K), Ideal.absNorm I = m * n →
+      Ideal.absNorm (I ⊔ A) = m ∧ Ideal.absNorm (I ⊔ B) = n := by
+    intro I hI
+    refine w1_norms hm hn hmn (d := Module.finrank ℤ (𝓞 K)) ?_ ?_ ?_
+    · rw [← hAn]; exact Ideal.absNorm_dvd_absNorm_of_le le_sup_right
+    · rw [← hBn]; exact Ideal.absNorm_dvd_absNorm_of_le le_sup_right
+    · rw [← map_mul, w1_sup_mul_sup_eq hAB (hABI I hI), hI]
+  let e : {I : Ideal (𝓞 K) // Ideal.absNorm I = m * n} ≃
+      {J : Ideal (𝓞 K) // Ideal.absNorm J = m} × {J : Ideal (𝓞 K) // Ideal.absNorm J = n} :=
+    { toFun := fun I => (⟨I.1 ⊔ A, (key I.1 I.2).1⟩, ⟨I.1 ⊔ B, (key I.1 I.2).2⟩)
+      invFun := fun p => ⟨p.1.1 * p.2.1, by rw [map_mul, p.1.2, p.2.2]⟩
+      left_inv := fun I => Subtype.ext (w1_sup_mul_sup_eq hAB (hABI I.1 I.2))
+      right_inv := fun p => by
+        refine Prod.ext (Subtype.ext ?_) (Subtype.ext ?_)
+        · exact w1_mul_sup_eq hAB (hle _ _ p.1.2) (hle _ _ p.2.2)
+        · show p.1.1 * p.2.1 ⊔ B = p.2.1
+          rw [mul_comm]
+          exact w1_mul_sup_eq hBA (hle _ _ p.2.2) (hle _ _ p.1.2) }
+  unfold idealCount
+  rw [← Nat.card_prod]
+  exact Nat.card_congr e
+
+end W1
+
+section W2
+
+open Ideal
+
+open UniqueFactorizationMonoid
+
+section helpers
+
+variable {K : Type*} [Field K] [NumberField K]
+
+lemma w2_span_max (p : ℕ) [hp : Fact p.Prime] : (span {(p : ℤ)} : Ideal ℤ).IsMaximal :=
+  Int.ideal_span_isMaximal_of_prime p
+
+lemma w2_span_ne_bot (p : ℕ) [hp : Fact p.Prime] : (span {(p : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+  simp [hp.out.ne_zero]
+
+lemma w2_ne_bot (p : ℕ) [Fact p.Prime] {P : Ideal (𝓞 K)}
+    (hP : P ∈ primesOver (span {(p : ℤ)}) (𝓞 K)) : P ≠ ⊥ :=
+  ne_bot_of_mem_primesOver (w2_span_ne_bot p) hP
+
+lemma w2_absNorm (p : ℕ) [hp : Fact p.Prime] {P : Ideal (𝓞 K)}
+    (hP : P ∈ primesOver (span {(p : ℤ)}) (𝓞 K)) :
+    absNorm P = p ^ inertiaDeg P ℤ := by
+  have := hP.1
+  have := hP.2
+  have := w2_span_max p
+  have : P.IsMaximal := hP.1.isMaximal (w2_ne_bot p hP)
+  rw [absNorm_eq_pow_inertiaDeg' P hp.out, inertiaDeg'_eq_inertiaDeg]
+
+lemma w2_prime (p : ℕ) [Fact p.Prime] {P : Ideal (𝓞 K)}
+    (hP : P ∈ primesOver (span {(p : ℤ)}) (𝓞 K)) : Prime P :=
+  prime_of_isPrime (w2_ne_bot p hP) hP.1
+
+lemma w2_normalizedFactors (p : ℕ) [Fact p.Prime] {P : Ideal (𝓞 K)}
+    (hP : P ∈ primesOver (span {(p : ℤ)}) (𝓞 K)) (n : ℕ) :
+    normalizedFactors (P ^ n) = Multiset.replicate n P := by
+  rw [normalizedFactors_pow, normalizedFactors_irreducible (w2_prime p hP).irreducible,
+    normalize_eq, Multiset.nsmul_singleton]
+
+lemma w2_mem_primesOver (p : ℕ) [hp : Fact p.Prime] {I : Ideal (𝓞 K)} {k : ℕ}
+    (hI : absNorm I = p ^ k) {Q : Ideal (𝓞 K)} (hQ : Q ∈ normalizedFactors I) :
+    Q ∈ primesOver (span {(p : ℤ)}) (𝓞 K) := by
+  have hQp : Q.IsPrime := isPrime_of_prime (prime_of_normalized_factor Q hQ)
+  have hIQ : I ≤ Q := le_of_dvd (dvd_of_mem_normalizedFactors hQ)
+  have h1 : ((p : 𝓞 K)) ^ k ∈ Q := by
+    have := hIQ (absNorm_mem I)
+    rw [hI] at this
+    simpa using this
+  have h2 : (p : 𝓞 K) ∈ Q := hQp.mem_of_pow_mem k h1
+  refine ⟨hQp, ⟨?_⟩⟩
+  refine IsMaximal.eq_of_le (w2_span_max p) IsPrime.ne_top' ?_
+  rw [span_le, Set.singleton_subset_iff, SetLike.mem_coe, mem_under]
+  simpa using h2
+
+lemma w2_ne_bot_of_absNorm (p : ℕ) [hp : Fact p.Prime] {I : Ideal (𝓞 K)} {k : ℕ}
+    (hI : absNorm I = p ^ k) : I ≠ ⊥ := by
+  intro h
+  rw [h, absNorm_bot] at hI
+  exact pow_ne_zero k hp.out.ne_zero hI.symm
+
+end helpers
+
+/-- A unique prime above `p` (inert or totally ramified), of inertia degree `f`:
+the ideals of norm `p ^ k` are the powers `P ^ (k / f)`, which exist iff `f ∣ k`. -/
+theorem idealCount_prime_pow_of_unique {K : Type*} [Field K] [NumberField K]
+    (p : ℕ) [Fact p.Prime] (f : ℕ) (hf : 0 < f)
+    (hS : (primesOver (span {(p : ℤ)}) (𝓞 K)).ncard = 1)
+    (hfP : ∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 K), inertiaDeg P ℤ = f) (k : ℕ) :
+    idealCount K (p ^ k) = if f ∣ k then 1 else 0 := by
+  have hp : p.Prime := Fact.out
+  obtain ⟨P, hSP⟩ := Set.ncard_eq_one.mp hS
+  have hP : P ∈ primesOver (span {(p : ℤ)}) (𝓞 K) := by rw [hSP]; rfl
+  have hnorm : ∀ e : ℕ, absNorm (P ^ e) = p ^ (f * e) := by
+    intro e
+    rw [map_pow, w2_absNorm p hP, hfP P hP, pow_mul]
+  have hdec : ∀ I : Ideal (𝓞 K), absNorm I = p ^ k → I = P ^ (normalizedFactors I).card := by
+    intro I hI
+    have hrep : normalizedFactors I = Multiset.replicate (normalizedFactors I).card P := by
+      rw [Multiset.eq_replicate_card]
+      intro Q hQ
+      have := w2_mem_primesOver p hI hQ
+      rw [hSP] at this
+      exact this
+    conv_lhs => rw [← Ideal.prod_normalizedFactors_eq_self (w2_ne_bot_of_absNorm p hI), hrep]
+    rw [Multiset.prod_replicate]
+  have hinj : Function.Injective (fun n : ℕ => p ^ n) := Nat.pow_right_injective hp.two_le
+  unfold idealCount
+  split_ifs with hdvd
+  · obtain ⟨e, rfl⟩ := hdvd
+    rw [Nat.card_eq_one_iff_exists]
+    refine ⟨⟨P ^ e, hnorm e⟩, ?_⟩
+    rintro ⟨I, hI⟩
+    apply Subtype.ext
+    show I = P ^ e
+    have h1 := hdec I hI
+    rw [h1]
+    rw [h1, hnorm] at hI
+    have := hinj hI
+    rw [Nat.eq_of_mul_eq_mul_left hf this]
+  · rw [Nat.card_eq_zero]
+    left
+    constructor
+    rintro ⟨I, hI⟩
+    apply hdvd
+    have h1 := hdec I hI
+    rw [h1, hnorm] at hI
+    exact ⟨_, (hinj hI).symm⟩
+
+/-- Exactly two primes above `p`, both of inertia degree `1`:
+the ideals of norm `p ^ k` are the `P₁ ^ a * P₂ ^ b` with `a + b = k`. -/
+theorem idealCount_prime_pow_of_split {K : Type*} [Field K] [NumberField K]
+    (p : ℕ) [Fact p.Prime]
+    (hS : (primesOver (span {(p : ℤ)}) (𝓞 K)).ncard = 2)
+    (hfP : ∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 K), inertiaDeg P ℤ = 1) (k : ℕ) :
+    idealCount K (p ^ k) = k + 1 := by
+  have hp : p.Prime := Fact.out
+  obtain ⟨P₁, P₂, hne, hSP⟩ := Set.ncard_eq_two.mp hS
+  have hP₁ : P₁ ∈ primesOver (span {(p : ℤ)}) (𝓞 K) := by rw [hSP]; simp
+  have hP₂ : P₂ ∈ primesOver (span {(p : ℤ)}) (𝓞 K) := by rw [hSP]; simp
+  have hnorm : ∀ a b : ℕ, absNorm (P₁ ^ a * P₂ ^ b) = p ^ (a + b) := by
+    intro a b
+    rw [map_mul, map_pow, map_pow, w2_absNorm p hP₁, w2_absNorm p hP₂, hfP P₁ hP₁, hfP P₂ hP₂,
+      pow_one, pow_add]
+  have hnf : ∀ a b : ℕ, normalizedFactors (P₁ ^ a * P₂ ^ b) =
+      Multiset.replicate a P₁ + Multiset.replicate b P₂ := by
+    intro a b
+    rw [normalizedFactors_mul (pow_ne_zero _ (w2_prime p hP₁).ne_zero)
+      (pow_ne_zero _ (w2_prime p hP₂).ne_zero), w2_normalizedFactors p hP₁,
+      w2_normalizedFactors p hP₂]
+  have hcount : ∀ a b : ℕ, (normalizedFactors (P₁ ^ a * P₂ ^ b)).count P₁ = a := by
+    intro a b
+    rw [hnf, Multiset.count_add, Multiset.count_replicate_self,
+      Multiset.count_replicate, if_neg (Ne.symm hne), add_zero]
+  have hdec : ∀ I : Ideal (𝓞 K), absNorm I = p ^ k →
+      I = P₁ ^ (normalizedFactors I).count P₁ * P₂ ^ (normalizedFactors I).count P₂ := by
+    intro I hI
+    have hsplit : normalizedFactors I = Multiset.replicate ((normalizedFactors I).count P₁) P₁ +
+        Multiset.replicate ((normalizedFactors I).count P₂) P₂ := by
+      rw [← Multiset.filter_eq', ← Multiset.filter_eq']
+      conv_lhs => rw [← Multiset.filter_add_not (· = P₁) (normalizedFactors I)]
+      congr 1
+      apply Multiset.filter_congr
+      intro Q hQ
+      have := w2_mem_primesOver p hI hQ
+      rw [hSP] at this
+      rcases this with h | h
+      · simp [h, hne]
+      · simp only [Set.mem_singleton_iff] at h
+        simp [h, Ne.symm hne]
+    conv_lhs => rw [← Ideal.prod_normalizedFactors_eq_self (w2_ne_bot_of_absNorm p hI), hsplit]
+    rw [Multiset.prod_add, Multiset.prod_replicate, Multiset.prod_replicate]
+  have hinj : Function.Injective (fun n : ℕ => p ^ n) := Nat.pow_right_injective hp.two_le
+  let g : Fin (k + 1) → {I : Ideal (𝓞 K) // absNorm I = p ^ k} := fun a =>
+    ⟨P₁ ^ (a : ℕ) * P₂ ^ (k - a), by rw [hnorm]; congr 1; have := a.isLt; omega⟩
+  have hg : Function.Bijective g := by
+    constructor
+    · intro a b hab
+      have := congrArg (fun I : {I : Ideal (𝓞 K) // absNorm I = p ^ k} =>
+        (normalizedFactors I.1).count P₁) hab
+      simp only [g, hcount] at this
+      exact Fin.ext this
+    · rintro ⟨I, hI⟩
+      have h1 := hdec I hI
+      have h2 := hI
+      rw [h1, hnorm] at h2
+      have h3 := hinj h2
+      refine ⟨⟨(normalizedFactors I).count P₁, by omega⟩, ?_⟩
+      apply Subtype.ext
+      simp only [g]
+      conv_rhs => rw [h1]
+      congr 2
+      omega
+  unfold idealCount
+  rw [← Nat.card_eq_of_bijective g hg, Nat.card_eq_fintype_card, Fintype.card_fin]
+
+end W2
+
+section W3
+
+open Ideal
+
+/-- The Gaussian number field `ℚ(i)`, as the 4th cyclotomic field. -/
+abbrev QI : Type := CyclotomicField 4 ℚ
+
+instance w3_neZero_four : NeZero ((4 : ℕ) : ℚ) := ⟨by norm_num⟩
+
+instance w3_isCyclotomic : IsCyclotomicExtension {4} ℚ QI :=
+  CyclotomicField.isCyclotomicExtension 4 ℚ
+
+/-- For an odd prime `p`, the number of primes above `p` in `ℚ(i)` times their inertia degree
+is `2`. -/
+theorem w3_ncard_mul_orderOf (p : ℕ) [Fact p.Prime] (hp : ¬ p ∣ 4) :
+    (primesOver (span {(p : ℤ)}) (𝓞 QI)).ncard * orderOf (p : ZMod 4) = 2 := by
+  have : IsGalois ℚ QI := IsCyclotomicExtension.isGalois {4} ℚ QI
+  have h_main := ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn
+    (span {(p : ℤ)}) (𝓞 QI) Gal(QI/ℚ)
+  rwa [IsCyclotomicExtension.Rat.ramificationIdxIn_eq_of_not_dvd p QI hp,
+    IsCyclotomicExtension.Rat.inertiaDegIn_eq_of_not_dvd p QI hp, one_mul,
+    IsGaloisGroup.card_eq_finrank Gal(QI/ℚ) ℚ QI, IsCyclotomicExtension.Rat.finrank 4 QI,
+    show Nat.totient 4 = 2 by decide] at h_main
+
+theorem w3_not_dvd_four (p : ℕ) (hpp : p.Prime) (hp : p % 4 = 1 ∨ p % 4 = 3) : ¬ p ∣ 4 := by
+  intro h
+  have : p ≤ 4 := Nat.le_of_dvd (by norm_num) h
+  interval_cases p <;> simp_all [Nat.not_prime_one]
+
+/-- `2` is totally ramified in `ℚ(i)`: one prime above it, of inertia degree `1`. -/
+theorem QI_two :
+    (primesOver (span {((2 : ℕ) : ℤ)}) (𝓞 QI)).ncard = 1 ∧
+      ∀ P ∈ primesOver (span {((2 : ℕ) : ℤ)}) (𝓞 QI), inertiaDeg P ℤ = 1 := by
+  have : IsCyclotomicExtension {2 ^ (1 + 1)} ℚ QI := by
+    norm_num
+    infer_instance
+  refine ⟨IsCyclotomicExtension.Rat.ncard_primesOver_of_prime_pow 2 1 QI, ?_⟩
+  rintro P ⟨hP1, hP2⟩
+  exact IsCyclotomicExtension.Rat.inertiaDeg_eq_of_prime_pow 2 1 QI P
+
+/-- A prime `p ≡ 1 (mod 4)` splits in `ℚ(i)`: two primes, of inertia degree `1`. -/
+theorem QI_one_mod_four (p : ℕ) [Fact p.Prime] (hp : p % 4 = 1) :
+    (primesOver (span {(p : ℤ)}) (𝓞 QI)).ncard = 2 ∧
+      ∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 QI), inertiaDeg P ℤ = 1 := by
+  have hnd := w3_not_dvd_four p Fact.out (Or.inl hp)
+  have hord : orderOf (p : ZMod 4) = 1 := by
+    rw [← ZMod.natCast_mod, hp, Nat.cast_one, orderOf_one]
+  refine ⟨by simpa [hord] using w3_ncard_mul_orderOf p hnd, ?_⟩
+  rintro P ⟨hP1, hP2⟩
+  rw [IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd p QI P hnd, hord]
+
+/-- A prime `p ≡ 3 (mod 4)` is inert in `ℚ(i)`: one prime, of inertia degree `2`. -/
+theorem QI_three_mod_four (p : ℕ) [Fact p.Prime] (hp : p % 4 = 3) :
+    (primesOver (span {(p : ℤ)}) (𝓞 QI)).ncard = 1 ∧
+      ∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 QI), inertiaDeg P ℤ = 2 := by
+  have hnd := w3_not_dvd_four p Fact.out (Or.inr hp)
+  have hord : orderOf (p : ZMod 4) = 2 := by
+    rw [← ZMod.natCast_mod, hp]
+    exact orderOf_eq_prime (by decide) (by decide)
+  refine ⟨by simpa [hord] using w3_ncard_mul_orderOf p hnd, ?_⟩
+  rintro P ⟨hP1, hP2⟩
+  rw [IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd p QI P hnd, hord]
+
+/-- The arithmetic function of `χ₄` is multiplicative. -/
+theorem w3_chi_mult :
+    (toArithmeticFunction (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ))).IsMultiplicative := by
+  refine ⟨by simp [toArithmeticFunction], fun {m n} _ => ?_⟩
+  simp only [toArithmeticFunction, ArithmeticFunction.coe_mk]
+  by_cases hm : m = 0
+  · simp [hm]
+  by_cases hn : n = 0
+  · simp [hn]
+  simp [hm, hn, Nat.cast_mul, map_mul]
+
+/-- A function `c` with `c 1 = 1`, multiplicative on coprime nonzero arguments, gives a
+multiplicative arithmetic function. -/
+theorem w3_count_mult (c : ℕ → ℕ) (hone : c 1 = 1)
+    (hmul : ∀ {m n : ℕ}, m ≠ 0 → n ≠ 0 → m.Coprime n → c (m * n) = c m * c n) :
+    (toArithmeticFunction (fun n : ℕ => (c n : ℂ))).IsMultiplicative := by
+  refine ⟨by simp [toArithmeticFunction, hone], fun {m n} hmn => ?_⟩
+  simp only [toArithmeticFunction, ArithmeticFunction.coe_mk]
+  by_cases hm : m = 0
+  · simp [hm]
+  by_cases hn : n = 0
+  · simp [hn]
+  simp [hm, hn, hmul hm hn hmn]
+
+theorem w3_sum_neg_one_pow (k : ℕ) :
+    ∑ j ∈ Finset.range (k + 1), ((-1 : ℂ)) ^ j = if 2 ∣ k then 1 else 0 := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [Finset.sum_range_succ, ih]
+    rcases Nat.even_or_odd k with hk | hk
+    · have h1 : ¬ 2 ∣ k + 1 := by rw [← even_iff_two_dvd]; simpa using hk.add_one
+      rw [if_pos (even_iff_two_dvd.mp hk), if_neg h1, (hk.add_one).neg_one_pow]
+      simp
+    · have h1 : 2 ∣ k + 1 := by rw [← even_iff_two_dvd]; exact hk.add_one
+      rw [if_neg (by rw [← even_iff_two_dvd]; exact Nat.not_even_iff_odd.mpr hk), if_pos h1,
+        (hk.add_one).neg_one_pow]
+      simp
+
+/-- Values of the arithmetic function of `χ₄` at prime powers. -/
+theorem w3_chi_pow (p x : ℕ) (hp : p ≠ 0) :
+    toArithmeticFunction (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ)) (p ^ x) =
+      (((ZMod.χ₄ (p : ZMod 4) : ℤ) : ℂ)) ^ x := by
+  change (if p ^ x = 0 then 0 else _) = _
+  rw [if_neg (pow_ne_zero x hp), Nat.cast_pow, map_pow, Int.cast_pow]
+
+theorem w3_toArith_one : toArithmeticFunction (1 : ℕ → ℂ) =
+    ((ArithmeticFunction.zeta : ArithmeticFunction ℕ) : ArithmeticFunction ℂ) := by
+  ext n
+  by_cases hn : n = 0
+  · simp [hn, toArithmeticFunction]
+  · simp [hn, toArithmeticFunction, ArithmeticFunction.natCoe_apply,
+      ArithmeticFunction.zeta_apply]
+
+/-- **The ideal-count identity for `ℚ(i)`**, from the generic counting inputs
+(`hone`, `hmul`, `hunique`, `hsplit` are proved generically in W1/W2 and plugged in
+at integration): `#{I : N I = n} = ∑_{d ∣ n} χ₄(d)` for `n ≠ 0`. -/
+theorem idealCount_QI_eq
+    (hone : idealCount QI 1 = 1)
+    (hmul : ∀ {m n : ℕ}, m ≠ 0 → n ≠ 0 → m.Coprime n →
+      idealCount QI (m * n) = idealCount QI m * idealCount QI n)
+    (hunique : ∀ (p : ℕ) [Fact p.Prime] (f : ℕ), 0 < f →
+      (primesOver (span {(p : ℤ)}) (𝓞 QI)).ncard = 1 →
+      (∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 QI), inertiaDeg P ℤ = f) →
+      ∀ k : ℕ, idealCount QI (p ^ k) = if f ∣ k then 1 else 0)
+    (hsplit : ∀ (p : ℕ) [Fact p.Prime],
+      (primesOver (span {(p : ℤ)}) (𝓞 QI)).ncard = 2 →
+      (∀ P ∈ primesOver (span {(p : ℤ)}) (𝓞 QI), inertiaDeg P ℤ = 1) →
+      ∀ k : ℕ, idealCount QI (p ^ k) = k + 1)
+    (n : ℕ) (hn : n ≠ 0) :
+    (idealCount QI n : ℂ) =
+      (LSeries.convolution (1 : ℕ → ℂ)
+        (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ))) n := by
+  have hF := w3_count_mult (idealCount QI) hone hmul
+  have hG : (toArithmeticFunction (1 : ℕ → ℂ) * toArithmeticFunction (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ))).IsMultiplicative := by
+    rw [w3_toArith_one]
+    exact ArithmeticFunction.isMultiplicative_zeta.natCast.mul w3_chi_mult
+  have key : toArithmeticFunction (fun n => (idealCount QI n : ℂ)) =
+      toArithmeticFunction 1 * toArithmeticFunction (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ)) := by
+    rw [ArithmeticFunction.IsMultiplicative.eq_iff_eq_on_prime_powers _ hF _ hG]
+    intro p k hp
+    have hp0 : p ≠ 0 := hp.ne_zero
+    have : Fact p.Prime := ⟨hp⟩
+    rw [w3_toArith_one, ArithmeticFunction.coe_zeta_mul_apply, Nat.sum_divisors_prime_pow hp]
+    rw [Finset.sum_congr rfl (fun x _ => w3_chi_pow p x hp0)]
+    simp only [toArithmeticFunction, ArithmeticFunction.coe_mk, pow_ne_zero k hp0, if_false]
+    rcases hp.eq_two_or_odd' with rfl | hodd
+    · have h2 : ZMod.χ₄ ((2 : ℕ) : ZMod 4) = 0 := by decide
+      rw [hunique 2 1 one_pos QI_two.1 QI_two.2 k, h2, Finset.sum_range_succ']
+      simp
+    · rcases Nat.odd_mod_four_iff.mp (Nat.odd_iff.mp hodd) with h1 | h3
+      · rw [hsplit p (QI_one_mod_four p h1).1 (QI_one_mod_four p h1).2 k,
+          ZMod.χ₄_nat_one_mod_four h1]
+        simp
+      · rw [hunique p 2 two_pos (QI_three_mod_four p h3).1 (QI_three_mod_four p h3).2 k,
+          ZMod.χ₄_nat_three_mod_four h3, Int.cast_neg, Int.cast_one, w3_sum_neg_one_pow k]
+        split_ifs <;> simp
+  change _ = (toArithmeticFunction (1 : ℕ → ℂ) *
+    toArithmeticFunction (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ))) n
+  rw [← key]
+  simp [toArithmeticFunction, hn]
+
+end W3
+
+end GaussianERH
+
+#print axioms GaussianERH.idealCount_one
+#print axioms GaussianERH.idealCount_mul
+#print axioms GaussianERH.idealCount_prime_pow_of_unique
+#print axioms GaussianERH.idealCount_prime_pow_of_split
+#print axioms GaussianERH.QI_two
+#print axioms GaussianERH.QI_one_mod_four
+#print axioms GaussianERH.QI_three_mod_four
+#print axioms GaussianERH.idealCount_QI_eq
+
+/-! ## ERH for `ℚ(i)`, assembled (under the Dirichlet GRH hypothesis) -/
+
+/-- **`hcoeff` for `ℚ(i)`, proved.** The number of ideals of norm `n` in the ring of
+integers of `ℚ(i) = CyclotomicField 4 ℚ` is `∑_{d ∣ n} χ₄(d)`. -/
+theorem hcoeff_QI (n : ℕ) (hn : n ≠ 0) :
+    (Nat.card {I : Ideal (𝓞 GaussianERH.QI) // Ideal.absNorm I = n} : ℂ)
+      = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => chiFour n)) n := by
+  have hfun : (fun n : ℕ => chiFour n) = (fun d : ℕ => ((ZMod.χ₄ (d : ZMod 4) : ℤ) : ℂ)) := by
+    funext d
+    exact chiFour_agrees_ZMod_chiFour d
+  rw [hfun]
+  exact GaussianERH.idealCount_QI_eq (GaussianERH.idealCount_one _)
+    (fun hm hn hmn => GaussianERH.idealCount_mul _ hm hn hmn)
+    (by
+      intro p _ f hf hS hfP k
+      exact GaussianERH.idealCount_prime_pow_of_unique p f hf hS hfP k)
+    (by
+      intro p _ hS hfP k
+      exact GaussianERH.idealCount_prime_pow_of_split p hS hfP k) n hn
+
+/-- The Dedekind-zeta datum of `ℚ(i)`: continuation `ζ · L(χ₄)`, functional equation,
+holomorphy and anchoring to Mathlib's `dedekindZeta`, with every input proved. -/
+noncomputable def gaussianDatum : DedekindZetaDatum GaussianERH.QI :=
+  quadraticDatum (N := 4) four_ne_one_nat chiFour chiFour_isPrimitive chiFour_sq
+    chiFour_rootNumber_ne_zero hcoeff_QI
+
+/-- **ERH for `ℚ(i)`**, under `DirichletGRH` (the exact shape of the base project's
+`LFunction_ne_zero_of_half_lt_re`, taken here as a hypothesis, not imported). All the
+nonvanishing comes from that hypothesis applied to `ζ` and `L(χ₄)`. -/
+theorem dedekindERH_QI (hgrh : DirichletGRH) : DedekindERH GaussianERH.QI gaussianDatum :=
+  dedekindERH_quadratic_i_assembled hgrh hcoeff_QI
+
+/-- The same for *every* datum of `ℚ(i)` (by `dedekindERH_iff`): a statement about the
+field, independent of the chosen continuation data. -/
+theorem dedekindERH_QI_of_datum (hgrh : DirichletGRH)
+    (D : DedekindZetaDatum GaussianERH.QI) : DedekindERH GaussianERH.QI D :=
+  (dedekindERH_iff gaussianDatum D).1 (dedekindERH_QI hgrh)
+
+/-- Critical-line form: under `DirichletGRH`, every zero of the continued Dedekind zeta of
+`ℚ(i)` in the open critical strip has real part `1/2`. -/
+theorem dedekindZeta_QI_zeros_on_line (hgrh : DirichletGRH)
+    (D : DedekindZetaDatum GaussianERH.QI) :
+    ∀ s : ℂ, 0 < s.re → s.re < 1 → D.ζ s = 0 → s.re = 1 / 2 :=
+  dedekindZetaCriticalLine GaussianERH.QI D (dedekindERH_QI_of_datum hgrh D)
+
+#print axioms hcoeff_QI
+#print axioms gaussianDatum
+#print axioms dedekindERH_QI
+#print axioms dedekindERH_QI_of_datum
+#print axioms dedekindZeta_QI_zeros_on_line
+
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
@@ -960,6 +1508,7 @@ noncomputable def riemannZetaDatum : DedekindZetaDatum ℚ where
   hγ := fun s hs0 _ => gammaR_ne_zero_of_re_pos hs0
   hΛζ := fun s hs0 _ => completedRiemannZeta_eq_gammaR_mul_riemannZeta hs0
   hfe := completedRiemannZeta_one_sub_mul
+  holo := fun _ hs => (differentiableAt_riemannZeta hs).differentiableWithinAt
 
 /-- **Closing the loop**: the (machine-verified) Riemann Hypothesis yields the
 ERH statement for `ℚ` through the anchored datum. -/
