@@ -711,6 +711,26 @@ theorem chiFour_agrees_ZMod_chiFour (a : ZMod 4) :
 
 #print axioms chiFour_agrees_ZMod_chiFour
 
+/-! ## Structural verification for the two-squares counting (hcoeff) -/
+
+/-- The Gaussian integers form a Euclidean domain (hence a PID, hence a UFD,
+hence integrally closed). All three instances are available by
+`infer_instance` in Mathlib at the pinned revision. -/
+example : EuclideanDomain (Zsqrtd (-1)) := by infer_instance
+
+example : IsPrincipalIdealRing (Zsqrtd (-1)) := by infer_instance
+
+example : IsIntegrallyClosed (Zsqrtd (-1)) := by infer_instance
+
+-- The norm of a unit in Z[i] is ±1 (from multiplicativity); combined with
+-- nonnegativity this forces +1. The formal proof requires the Zsqrtd.norm
+-- API to be more developed than at the pinned revision; the key structural
+-- instances (PID, integrally closed) are verified above.
+-- TODO: formalize `zsqrtNegOne_unit_norm` (blocked on Zsqrtd.norm API)
+-- TODO: connect Ideal.absNorm to Zsqrtd.norm for GaussianInt
+-- TODO: the two-squares counting formula (Jacobi)
+-- These three TODOs together constitute the full hcoeff input.
+
 /-! ## The Gauss sum of chi_4 and the nonvanishing of its root number -/
 
 private theorem stdAddChar_one : ZMod.stdAddChar (1 : ZMod 4) = I := by
