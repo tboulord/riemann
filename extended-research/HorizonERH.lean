@@ -609,17 +609,15 @@ private theorem changeLevel_three_of_level_one_or_two {d : ℕ} (hd : d = 1 ∨ 
     (chi0 : DirichletCharacter ℂ d) {hdvd : d ∣ 4} :
     (DirichletCharacter.changeLevel hdvd chi0) (3 : ZMod 4) = 1 := by
   have hcast : ((3 : ℕ) : ZMod 4) = ((3 : ℤ) : ZMod 4) := by push_cast
+    rfl
   show (DirichletCharacter.changeLevel hdvd chi0) ((3 : ℕ) : ZMod 4) = 1
   rw [hcast, DirichletCharacter.changeLevel_eq_cast_of_dvd' chi0 hdvd
     (show IsCoprime (3 : ℤ) 4 by decide)]
-  first
-  | rfl
-  | (push_cast; rfl)
-  | (rcases hd with rfl | rfl
-    · rw [show ((3 : ℤ) : ZMod 1) = 1 by decide]
-      exact map_one chi0
-    · rw [show ((3 : ℤ) : ZMod 2) = 1 by decide]
-      exact map_one chi0)
+  rcases hd with rfl | rfl
+  · rw [show ((3 : ℤ) : ZMod 1) = 1 by decide]
+    exact map_one chi0
+  · rw [show ((3 : ℤ) : ZMod 2) = 1 by decide]
+    exact map_one chi0
 
 /-- chi_4 is primitive: its conductor is 4, since it does not factor through
 level 1 or 2 (chi_4(3) = -1 while every level-1/2 character takes value 1
