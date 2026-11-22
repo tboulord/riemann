@@ -223,85 +223,6 @@ theorem nonvanishing_of_dirichlet_factorization (hgrh : DirichletGRH)
 
 #print axioms nonvanishing_of_dirichlet_factorization
 
-/-! ## The quadratic datum: ERH modulo exactly the two-squares count -/
-
-/-- The Dirichlet gamma-factor of any character is zero-free on the open
-right half-plane (both the even factor `Γ_ℝ s` and the odd factor
-`Γ_ℝ (s+1)` are products of a nonzero exponential with a Gamma value of
-positive real part). -/
-theorem gammaFactor_ne_zero_of_re_pos {N : ℕ} [NeZero N]
-    (ψ : DirichletCharacter ℂ N) {s : ℂ} (hs0 : 0 < s.re) :
-    DirichletCharacter.gammaFactor ψ s ≠ 0 := by
-  rcases ψ.even_or_odd with h | h
-  · rw [h.gammaFactor_def]; exact Gammaℝ_ne_zero_of_re_pos hs0
-  · rw [h.gammaFactor_def]
-    refine Gammaℝ_ne_zero_of_re_pos ?_
-    rw [Complex.add_re, Complex.one_re]; linarith
-
-/-- **The quadratic Dedekind-zeta datum.** For a number field `K` whose
-Dedekind zeta factors as `ζ · L(ψ)` with `ψ` a primitive quadratic character
-(`ψ * ψ = 1`), this *constructs* the full `DedekindZetaDatum K`:
-the continuation is the product `ζ · L(ψ)` (so the strip-level identity holds
-by definition — no identity-theorem step needed), the anchor field `agrees`
-is supplied by the coefficient identity (`hcoeff`), and the completed form
-`N ^ (s²/2) · Λ_ζ · Λ_ψ` satisfies a functional equation with the *constant*
-root number `rootNumber ψ` (the non-constant factor `N ^ (s - 1/2)` in
-Dirichlet's functional equation is absorbed by the `N ^ (s²/2)` twist, since
-`(1-s)²/2 + (s - 1/2) = s²/2`). -/
-noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
-    {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
-    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
-    (hquad : ψ * ψ = 1) (hroot : DirichletCharacter.rootNumber ψ ≠ 0)
-    (hcoeff : ∀ n : ℕ, n ≠ 0 →
-      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
-        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n) :
-    DedekindZetaDatum K where
-  ζ := fun z => riemannZeta z * DirichletCharacter.LFunction ψ z
-  Λ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * completedRiemannZeta z
-    * DirichletCharacter.completedLFunction ψ z
-  γ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * (Gammaℝ z * DirichletCharacter.gammaFactor ψ z)
-  ε := DirichletCharacter.rootNumber ψ
-  agrees := ⟨2, by norm_num, fun z hz =>
-    (dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution ψ hcoeff
-      (by simp only [Set.mem_setOf] at hz; linarith)).symm⟩
-  hε := hroot
-  hγ := fun s hs0 _ => mul_ne_zero
-    (Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast (NeZero.ne N))))
-    (mul_ne_zero (gammaR_ne_zero_of_re_pos hs0) (gammaFactor_ne_zero_of_re_pos ψ hs0))
-  hΛζ := fun s hs0 _ => by
-    have h1 : completedRiemannZeta s = Gammaℝ s * riemannZeta s :=
-      completedRiemannZeta_eq_gammaR_mul_riemannZeta hs0
-    have hg : DirichletCharacter.gammaFactor ψ s ≠ 0 :=
-      gammaFactor_ne_zero_of_re_pos ψ hs0
-    have h2 : DirichletCharacter.completedLFunction ψ s
-        = DirichletCharacter.gammaFactor ψ s * DirichletCharacter.LFunction ψ s := by
-      rw [DirichletCharacter.LFunction_eq_completed_div_gammaFactor ψ s (Or.inr hN1)]
-      field_simp
-    rw [h1, h2]; ring
-  hfe := fun s _ _ => by
-    have hNc : ((N:ℂ)) ≠ 0 := by exact_mod_cast (NeZero.ne N)
-    have hd : DirichletCharacter.completedLFunction ψ (1 - s)
-        = (N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
-          * DirichletCharacter.completedLFunction ψ s := by
-      rw [DirichletCharacter.IsPrimitive.completedLFunction_one_sub hprim s]
-      rw [show ψ⁻¹ = ψ from inv_eq_of_mul_eq_one_left hquad]
-    have hex : ((1:ℂ) - s) ^ 2 / 2 + (s - 1 / 2) = s ^ 2 / 2 := by ring
-    calc (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta (1 - s)
-          * DirichletCharacter.completedLFunction ψ (1 - s)
-        = (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta s
-          * ((N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
-            * DirichletCharacter.completedLFunction ψ s) := by
-          rw [completedRiemannZeta_one_sub s, hd]
-      _ = DirichletCharacter.rootNumber ψ
-          * ((N : ℂ) ^ (s ^ 2 / 2) * completedRiemannZeta s
-            * DirichletCharacter.completedLFunction ψ s) := by
-          simp only [mul_assoc, mul_comm, mul_left_comm]
-          rw [← Complex.cpow_add hNc, hex]
-          ring
-
-#print axioms gammaFactor_ne_zero_of_re_pos
-#print axioms quadraticDatum
-
 /-! ## No Siegel zeros -/
 
 /-- The exact shape of the parent project's proven theorem (`Statements.lean`:
@@ -458,6 +379,85 @@ theorem dedekindERH_quadratic_of_twoSquares (hgrh : DirichletGRH)
 #print axioms nonvanishing_of_dirichlet_family
 #print axioms dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution
 #print axioms dedekindERH_quadratic_of_twoSquares
+
+/-! ## The quadratic datum: ERH modulo exactly the two-squares count -/
+
+/-- The Dirichlet gamma-factor of any character is zero-free on the open
+right half-plane (both the even factor `Γ_ℝ s` and the odd factor
+`Γ_ℝ (s+1)` are products of a nonzero exponential with a Gamma value of
+positive real part). -/
+theorem gammaFactor_ne_zero_of_re_pos {N : ℕ} [NeZero N]
+    (ψ : DirichletCharacter ℂ N) {s : ℂ} (hs0 : 0 < s.re) :
+    DirichletCharacter.gammaFactor ψ s ≠ 0 := by
+  rcases ψ.even_or_odd with h | h
+  · rw [h.gammaFactor_def]; exact Gammaℝ_ne_zero_of_re_pos hs0
+  · rw [h.gammaFactor_def]
+    refine Gammaℝ_ne_zero_of_re_pos ?_
+    rw [Complex.add_re, Complex.one_re]; linarith
+
+/-- **The quadratic Dedekind-zeta datum.** For a number field `K` whose
+Dedekind zeta factors as `ζ · L(ψ)` with `ψ` a primitive quadratic character
+(`ψ * ψ = 1`), this *constructs* the full `DedekindZetaDatum K`:
+the continuation is the product `ζ · L(ψ)` (so the strip-level identity holds
+by definition — no identity-theorem step needed), the anchor field `agrees`
+is supplied by the coefficient identity (`hcoeff`), and the completed form
+`N ^ (s²/2) · Λ_ζ · Λ_ψ` satisfies a functional equation with the *constant*
+root number `rootNumber ψ` (the non-constant factor `N ^ (s - 1/2)` in
+Dirichlet's functional equation is absorbed by the `N ^ (s²/2)` twist, since
+`(1-s)²/2 + (s - 1/2) = s²/2`). -/
+noncomputable def quadraticDatum {K : Type*} [Field K] [NumberField K]
+    {N : ℕ} [NeZero N] (hN1 : N ≠ 1)
+    (ψ : DirichletCharacter ℂ N) (hprim : DirichletCharacter.IsPrimitive ψ)
+    (hquad : ψ * ψ = 1) (hroot : DirichletCharacter.rootNumber ψ ≠ 0)
+    (hcoeff : ∀ n : ℕ, n ≠ 0 →
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ)
+        = (LSeries.convolution (1 : ℕ → ℂ) (fun n : ℕ => ψ n)) n) :
+    DedekindZetaDatum K where
+  ζ := fun z => riemannZeta z * DirichletCharacter.LFunction ψ z
+  Λ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * completedRiemannZeta z
+    * DirichletCharacter.completedLFunction ψ z
+  γ := fun z => (N : ℂ) ^ (z ^ 2 / 2) * (Gammaℝ z * DirichletCharacter.gammaFactor ψ z)
+  ε := DirichletCharacter.rootNumber ψ
+  agrees := ⟨2, by norm_num, fun z hz =>
+    (dedekindZeta_eq_riemannZeta_mul_LFunction_of_convolution ψ hcoeff
+      (by simp only [Set.mem_setOf] at hz; linarith)).symm⟩
+  hε := hroot
+  hγ := fun s hs0 _ => mul_ne_zero
+    (Complex.cpow_ne_zero_iff.mpr (Or.inl (by exact_mod_cast (NeZero.ne N))))
+    (mul_ne_zero (gammaR_ne_zero_of_re_pos hs0) (gammaFactor_ne_zero_of_re_pos ψ hs0))
+  hΛζ := fun s hs0 _ => by
+    have h1 : completedRiemannZeta s = Gammaℝ s * riemannZeta s :=
+      completedRiemannZeta_eq_gammaR_mul_riemannZeta hs0
+    have hg : DirichletCharacter.gammaFactor ψ s ≠ 0 :=
+      gammaFactor_ne_zero_of_re_pos ψ hs0
+    have h2 : DirichletCharacter.completedLFunction ψ s
+        = DirichletCharacter.gammaFactor ψ s * DirichletCharacter.LFunction ψ s := by
+      rw [DirichletCharacter.LFunction_eq_completed_div_gammaFactor ψ s (Or.inr hN1)]
+      field_simp
+    rw [h1, h2]; ring
+  hfe := fun s _ _ => by
+    have hNc : ((N:ℂ)) ≠ 0 := by exact_mod_cast (NeZero.ne N)
+    have hd : DirichletCharacter.completedLFunction ψ (1 - s)
+        = (N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
+          * DirichletCharacter.completedLFunction ψ s := by
+      rw [DirichletCharacter.IsPrimitive.completedLFunction_one_sub hprim s]
+      rw [show ψ⁻¹ = ψ from inv_eq_of_mul_eq_one_left hquad]
+    have hex : ((1:ℂ) - s) ^ 2 / 2 + (s - 1 / 2) = s ^ 2 / 2 := by ring
+    calc (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta (1 - s)
+          * DirichletCharacter.completedLFunction ψ (1 - s)
+        = (N : ℂ) ^ ((1 - s) ^ 2 / 2) * completedRiemannZeta s
+          * ((N : ℂ) ^ (s - 1 / 2) * DirichletCharacter.rootNumber ψ
+            * DirichletCharacter.completedLFunction ψ s) := by
+          rw [completedRiemannZeta_one_sub s, hd]
+      _ = DirichletCharacter.rootNumber ψ
+          * ((N : ℂ) ^ (s ^ 2 / 2) * completedRiemannZeta s
+            * DirichletCharacter.completedLFunction ψ s) := by
+          simp only [mul_assoc, mul_comm, mul_left_comm]
+          rw [← Complex.cpow_add _ _ hNc, hex]
+          ring
+
+#print axioms gammaFactor_ne_zero_of_re_pos
+#print axioms quadraticDatum
 
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
