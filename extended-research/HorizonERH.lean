@@ -669,6 +669,48 @@ theorem chiFour_isPrimitive : DirichletCharacter.IsPrimitive chiFour := by
 #print axioms chiFour_sq
 #print axioms chiFour_isPrimitive
 
+/-- Bridge: `chiFour` agrees with Mathlib's `ZMod.χ₄` (values in ℤ) cast to
+ℂ at every point. This identifies our hand-constructed character with the
+canonical one from `LegendreSymbol/ZModChar.lean`. -/
+theorem chiFour_agrees_ZMod_chiFour (a : ZMod 4) :
+    chiFour a = ((ZMod.χ₄ a : Int) : ℂ) := by
+  have hv : a.val < 4 := ZMod.val_lt a
+  rcases (by omega : a.val = 0 ∨ a.val = 1 ∨ a.val = 2 ∨ a.val = 3) with h | h | h | h
+  · have ha : a = ((0 : ℕ) : ZMod 4) := by
+      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_zero]
+    subst ha
+    show chiFourFun ((0 : ℕ) : ZMod 4) = ((ZMod.χ₄ ((0 : ℕ) : ZMod 4) : Int) : ℂ)
+    have hvv : ((0 : ℕ) : ZMod 4).val = 0 := ZMod.val_cast_of_lt (by norm_num)
+    simp only [chiFourFun, hvv]
+    show (0 : ℂ) = ((ZMod.χ₄ ((0 : ℕ) : ZMod 4) : Int) : ℂ)
+    norm_num [ZMod.χ₄]
+  · have ha : a = ((1 : ℕ) : ZMod 4) := by
+      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_one]
+    subst ha
+    show chiFourFun ((1 : ℕ) : ZMod 4) = ((ZMod.χ₄ ((1 : ℕ) : ZMod 4) : Int) : ℂ)
+    have hvv : ((1 : ℕ) : ZMod 4).val = 1 := ZMod.val_cast_of_lt (by norm_num)
+    simp only [chiFourFun, hvv]
+    show (1 : ℂ) = ((ZMod.χ₄ ((1 : ℕ) : ZMod 4) : Int) : ℂ)
+    norm_num [ZMod.χ₄]
+  · have ha : a = ((2 : ℕ) : ZMod 4) := by
+      rw [← ZMod.natCast_zmod_val a, h, Nat.cast_two]
+    subst ha
+    show chiFourFun ((2 : ℕ) : ZMod 4) = ((ZMod.χ₄ ((2 : ℕ) : ZMod 4) : Int) : ℂ)
+    have hvv : ((2 : ℕ) : ZMod 4).val = 2 := ZMod.val_cast_of_lt (by norm_num)
+    simp only [chiFourFun, hvv]
+    show (0 : ℂ) = ((ZMod.χ₄ ((2 : ℕ) : ZMod 4) : Int) : ℂ)
+    norm_num [ZMod.χ₄]
+  · have ha : a = ((3 : ℕ) : ZMod 4) := by
+      rw [← ZMod.natCast_zmod_val a, h]
+    subst ha
+    show chiFourFun ((3 : ℕ) : ZMod 4) = ((ZMod.χ₄ ((3 : ℕ) : ZMod 4) : Int) : ℂ)
+    have hvv : ((3 : ℕ) : ZMod 4).val = 3 := ZMod.val_cast_of_lt (by norm_num)
+    simp only [chiFourFun, hvv]
+    show (-1 : ℂ) = ((ZMod.χ₄ ((3 : ℕ) : ZMod 4) : Int) : ℂ)
+    norm_num [ZMod.χ₄]
+
+#print axioms chiFour_agrees_ZMod_chiFour
+
 /-! ## The Gauss sum of chi_4 and the nonvanishing of its root number -/
 
 private theorem stdAddChar_one : ZMod.stdAddChar (1 : ZMod 4) = I := by
