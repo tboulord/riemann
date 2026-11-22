@@ -530,7 +530,7 @@ noncomputable def chiFour : DirichletCharacter ℂ 4 :=
     · exact absurd (by rw [h]; norm_num) hc
     · show chiFourFun a = 0
       simp [chiFourFun, h, ZMod.val_natCast]
-    · exact absurd (by rw [h]; norm_num) hc
+    · exact absurd (by rw [h]; norm_num) hc)
 
 @[simp] theorem chiFour_one : chiFour (1 : ZMod 4) = 1 := by
   simp [chiFour, MulChar.coe_mk, chiFourFun, ZMod.val_natCast]
