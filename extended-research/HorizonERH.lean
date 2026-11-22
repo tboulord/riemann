@@ -489,6 +489,123 @@ theorem dedekindERH_quadratic_modulo_twoSquares (hgrh : DirichletGRH)
 #print axioms gammaFactor_ne_zero_of_re_pos
 #print axioms quadraticDatum
 
+/-! ## The concrete quadratic character chi_4 (mod 4) -/
+
+/-- The primitive quadratic Dirichlet character mod 4, defined
+computationally by residue: `chi_4(1) = 1`, `chi_4(3) = -1`, zero elsewhere. -/
+private def chiFourFun (a : ZMod 4) : ℂ :=
+  match (a : ZMod 4).val with
+  | 1 => 1
+  | 3 => -1
+  | _ => 0
+
+private theorem chiFourFun_mul (a b : ZMod 4) :
+    chiFourFun (a * b) = chiFourFun a * chiFourFun b := by
+  have hmul : (a * b : ZMod 4).val = ((a : ZMod 4).val * (b : ZMod 4).val) % 4 :=
+    ZMod.val_mul a b
+  have ha : (a : ZMod 4).val < 4 := ZMod.val_lt a
+  have hb : (b : ZMod 4).val < 4 := ZMod.val_lt b
+  interval_cases (a : ZMod 4).val
+  all_goals interval_cases (b : ZMod 4).val
+  all_goals simp [chiFourFun, hmul]
+
+/-- The primitive quadratic Dirichlet character chi_4 modulo 4. -/
+noncomputable def chiFour : DirichletCharacter ℂ 4 :=
+  MulChar.mk ⟨chiFourFun, by simp [chiFourFun], fun _ _ => chiFourFun_mul _ _⟩ (by
+    intro a ha
+    have hI : IsUnit ((a : ZMod 4).val : ZMod 4) := by
+      rwa [ZMod.natCast_zmod_cast a] at ha
+    have hc : (a : ZMod 4).val.Coprime 4 := (ZMod.isUnit_iff_coprime _ 4).mp hI
+    have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
+    rcases (by omega : (a : ZMod 4).val = 0 ∨ (a : ZMod 4).val = 2) with h | h
+    · show chiFourFun a = 0
+      simp [chiFourFun, h]
+    · show chiFourFun a = 0
+      simp [chiFourFun, h])
+
+@[simp] theorem chiFour_one : chiFour (1 : ZMod 4) = 1 := by
+  simp [chiFour, MulChar.coe_mk, chiFourFun]
+
+@[simp] theorem chiFour_two : chiFour (2 : ZMod 4) = 0 := by
+  simp [chiFour, MulChar.coe_mk, chiFourFun]
+
+@[simp] theorem chiFour_three : chiFour (3 : ZMod 4) = -1 := by
+  simp [chiFour, MulChar.coe_mk, chiFourFun]
+
+/-- chi_4 is quadratic: `chi_4 * chi_4 = 1`. -/
+theorem chiFour_sq : chiFour * chiFour = 1 := by
+  apply MulChar.ext'
+  intro a
+  have hv : (a : ZMod 4).val < 4 := ZMod.val_lt a
+  interval_cases (a : ZMod 4).val
+  · have h1 : ((1 : DirichletCharacter ℂ 4) (0 : ZMod 4)) = 0 :=
+      MulChar.map_nonunit _ (by simp)
+    simp [chiFour, chiFourFun, h1]
+  · simp [chiFour, chiFourFun]
+  · have h1 : ((1 : DirichletCharacter ℂ 4) (2 : ZMod 4)) = 0 :=
+      MulChar.map_nonunit _ (by simp)
+    simp [chiFour, chiFourFun, h1]
+  · simp [chiFour, chiFourFun]
+
+/-- Every Dirichlet character of level 1 or 2 takes the value `1` at `3`
+(when pulled back to level 4): the value only depends on the residue of `3`
+modulo the level, and at `1` every character is `1`. -/
+private theorem changeLevel_three_of_level_one_or_two {d : ℕ} (hd : d = 1 ∨ d = 2)
+    (chi0 : DirichletCharacter ℂ d) {hdvd : d ∣ 4} :
+    (DirichletCharacter.changeLevel hdvd chi0) (3 : ZMod 4) = 1 := by
+  have hcast : ((3 : ℕ) : ZMod 4) = ((3 : ℤ) : ZMod 4) := by push_cast; rfl
+  rw [hcast, DirichletCharacter.changeLevel_eq_cast_of_dvd' hdvd (a := 3) (by norm_num)]
+  rcases hd with rfl | rfl
+  · have h31 : ((3 : ℤ) : ZMod 1) = 1 := Subsingleton.elim _ _
+    rw [h31]
+    exact map_one _
+  · have h32 : ((3 : ℤ) : ZMod 2) = 1 := by
+      apply ZMod.val_injective
+      simp
+    rw [h32]
+    exact map_one _
+
+/-- chi_4 is primitive: its conductor is 4, since it does not factor through
+level 1 or 2 (chi_4(3) = -1 while every level-1/2 character takes value 1
+there), and the conductor divides 4. -/
+theorem chiFour_isPrimitive : DirichletCharacter.IsPrimitive chiFour := by
+  have hdvd := DirichletCharacter.conductor_dvd_level chiFour
+  have h0 : DirichletCharacter.conductor chiFour ≠ 0 :=
+    DirichletCharacter.conductor_ne_zero chiFour
+  have hfac := DirichletCharacter.factorsThrough_conductor chiFour
+  have hne12 : DirichletCharacter.conductor chiFour ≠ 1
+      ∧ DirichletCharacter.conductor chiFour ≠ 2 := by
+    constructor
+    · intro e
+      have hc : DirichletCharacter.FactorsThrough chiFour 1 := by
+        rw [e] at hfac
+        exact hfac
+      have hEq := hc.eq_changeLevel
+      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4)) hEq
+      rw [changeLevel_three_of_level_one_or_two (Or.inl rfl) _] at h3
+      rw [chiFour_three] at h3
+      exact absurd h3 (by norm_num)
+    · intro e
+      have hc : DirichletCharacter.FactorsThrough chiFour 2 := by
+        rw [e] at hfac
+        exact hfac
+      have hEq := hc.eq_changeLevel
+      have h3 := congrArg (fun (chi : DirichletCharacter ℂ 4) => chi (3 : ZMod 4)) hEq
+      rw [changeLevel_three_of_level_one_or_two (Or.inr rfl) _] at h3
+      rw [chiFour_three] at h3
+      exact absurd h3 (by norm_num)
+  have hle : DirichletCharacter.conductor chiFour ≤ 4 := Nat.le_of_dvd four_pos hdvd
+  show DirichletCharacter.conductor chiFour = 4
+  interval_cases DirichletCharacter.conductor chiFour with hc
+  · exact absurd hc h0
+  · exact absurd hc hne12.1
+  · exact absurd hc hne12.2
+  · exact absurd hdvd (by norm_num)
+  · rfl
+
+#print axioms chiFour_sq
+#print axioms chiFour_isPrimitive
+
 /-! ## The glue `NumberField.dedekindZeta ℚ = riemannZeta` -/
 
 /-- The ring of integers of `ℚ`, as a `ℤ`-algebra equivalence with `ℤ`. -/
